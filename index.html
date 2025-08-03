@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDF Viewer Web Component Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 2rem;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #666;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        
+        .controls {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .controls select, .controls button {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .controls button {
+            background: #007acc;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background: #005a99;
+        }
+        
+        .data-input {
+            width: 100%;
+            height: 200px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+        
+        .rdf-viewer {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RDF Viewer Web Component Test</h1>
+        
+        <div class="test-section">
+            <h2>Example 1: FOAF Person Data</h2>
+            <div class="controls">
+                <label>
+                    <input type="checkbox" id="show-namespaces-1" checked>
+                    Show Namespaces
+                </label>
+                <label>
+                    <input type="checkbox" id="expand-uris-1">
+                    Expand URIs
+                </label>
+                <label>
+                    Theme:
+                    <select id="theme-1">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+            </div>
+            <rdf-viewer id="viewer1" format="turtle" show-namespaces="true" expand-uris="false" theme="light"></rdf-viewer>
+        </div>
+        
+        <div class="test-section">
+            <h2>Example 2: Dublin Core Metadata</h2>
+            <div class="controls">
+                <label>
+                    <input type="checkbox" id="show-namespaces-2" checked>
+                    Show Namespaces
+                </label>
+                <label>
+                    <input type="checkbox" id="expand-uris-2">
+                    Expand URIs
+                </label>
+                <label>
+                    Theme:
+                    <select id="theme-2">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+            </div>
+            <rdf-viewer id="viewer2" format="turtle" show-namespaces="true" expand-uris="false" theme="light"></rdf-viewer>
+        </div>
+        
+        <div class="test-section">
+            <h2>Custom RDF Data</h2>
+            <div class="controls">
+                <label>
+                    Format:
+                    <select id="format-3">
+                        <option value="turtle">Turtle</option>
+                        <option value="n-triples">N-Triples</option>
+                        <option value="n-quads">N-Quads</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" id="show-namespaces-3" checked>
+                    Show Namespaces
+                </label>
+                <label>
+                    <input type="checkbox" id="expand-uris-3">
+                    Expand URIs
+                </label>
+                <label>
+                    Theme:
+                    <select id="theme-3">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+                <button onclick="updateCustomViewer()">Update Viewer</button>
+            </div>
+            <textarea class="data-input" id="custom-data" placeholder="Enter your RDF data here...">@prefix ex: <http://example.org/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+ex:person1 a foaf:Person ;
+    foaf:name "John Doe" ;
+    foaf:age 30 ;
+    foaf:mbox <mailto:john@example.org> .</textarea>
+            <rdf-viewer id="viewer3" format="turtle" show-namespaces="true" expand-uris="false" theme="light"></rdf-viewer>
+        </div>
+    </div>
+
+    <script type="module" src="./frontend.ts"></script>
+</body>
+</html>
