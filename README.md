@@ -11,6 +11,9 @@ A collection of standards-compliant Web Components for working with RDF (Resourc
 - **Multilingual Labels**: Support for rdfs:label and SKOS labels with language preferences
 - **Flexible Layouts**: Choose between table-like and turtle-like display formats
 - **Intelligent Object Rendering**: Automatic detection and display of images, dates, numbers, emails, etc.
+- **Inline Image Display**: Option to show/hide images inline with configurable thumbnails
+- **Link Navigation**: Click on object-side URIs to navigate to other subjects in the dataset
+- **Navigation Controls**: Built-in controls to navigate between subjects and return to full view
 - **Customizable**: Configurable themes, namespace display, and URI expansion
 - **Standards Compliant**: Built as standard Web Components, works with any framework or vanilla HTML
 
@@ -69,6 +72,8 @@ This starts a development server at `http://localhost:3000` with hot module relo
 - `theme`: Visual theme (`light`/`dark`)
 - `preferred-languages`: Comma-separated list of preferred languages for labels (e.g., `en,de,fr`)
 - `vocabularies`: Comma-separated list of vocabulary URLs to load for enhanced labels
+- `show-images-inline`: Whether to show images inline as thumbnails (`true`/`false`)
+- `enable-navigation`: Whether to enable clicking on object-side URIs for navigation (`true`/`false`)
 
 ### JavaScript API
 
@@ -99,6 +104,12 @@ await viewer.addVocabulary('http://www.w3.org/2004/02/skos/core');
 
 // Remove vocabulary
 viewer.removeVocabulary('http://example.org/vocab');
+
+// Navigate to a specific subject
+viewer.navigateToSubject('http://example.org/alice');
+
+// Show all subjects (return from navigation)
+viewer.showAllSubjects();
 ```
 
 ### Styling
@@ -156,6 +167,8 @@ Load external vocabularies to get human-readable labels for properties:
 ```
 
 The viewer will automatically use `rdfs:label`, `skos:prefLabel`, `skos:altLabel`, and Dublin Core titles from these vocabularies.
+
+**Note on CORS**: When developing locally, external vocabulary URLs may be blocked by CORS policy. This is expected behavior and the component will still work correctly, just without enhanced labels from external vocabularies. In production environments with proper CORS configuration, or when serving vocabularies from the same origin, this limitation doesn't apply.
 
 #### Intelligent Object Rendering
 The viewer automatically detects and renders different data types:

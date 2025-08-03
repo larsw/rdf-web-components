@@ -1,0 +1,115 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix ex: <http://example.org/> .
+
+# FOAF vocabulary labels
+foaf:Person rdfs:label "Person"@en ;
+    rdfs:label "Personne"@fr ;
+    rdfs:label "Person"@de .
+
+foaf:name rdfs:label "Name"@en ;
+    rdfs:label "Nom"@fr ;
+    rdfs:label "Name"@de .
+
+foaf:age rdfs:label "Age"@en ;
+    rdfs:label "Âge"@fr ;
+    rdfs:label "Alter"@de .
+
+foaf:birthday rdfs:label "Birthday"@en ;
+    rdfs:label "Anniversaire"@fr ;
+    rdfs:label "Geburtstag"@de .
+
+foaf:mbox rdfs:label "Email"@en ;
+    rdfs:label "Email"@fr ;
+    rdfs:label "Email"@de .
+
+foaf:phone rdfs:label "Phone"@en ;
+    rdfs:label "Téléphone"@fr ;
+    rdfs:label "Telefon"@de .
+
+foaf:knows rdfs:label "Knows"@en ;
+    rdfs:label "Connaît"@fr ;
+    rdfs:label "Kennt"@de .
+
+foaf:depiction rdfs:label "Picture"@en ;
+    rdfs:label "Photo"@fr ;
+    rdfs:label "Bild"@de .
+
+foaf:nick rdfs:label "Nickname"@en ;
+    rdfs:label "Surnom"@fr ;
+    rdfs:label "Spitzname"@de .
+
+foaf:homepage rdfs:label "Homepage"@en ;
+    rdfs:label "Page d'accueil"@fr ;
+    rdfs:label "Homepage"@de .
+
+foaf:workplaceHomepage rdfs:label "Work Website"@en ;
+    rdfs:label "Site web du travail"@fr ;
+    rdfs:label "Arbeitsplatz-Website"@de .
+
+# Dublin Core vocabulary labels
+dc:title rdfs:label "Title"@en ;
+    rdfs:label "Titre"@fr ;
+    rdfs:label "Titel"@de .
+
+dc:creator rdfs:label "Creator"@en ;
+    rdfs:label "Créateur"@fr ;
+    rdfs:label "Ersteller"@de .
+
+dc:subject rdfs:label "Subject"@en ;
+    rdfs:label "Sujet"@fr ;
+    rdfs:label "Thema"@de .
+
+dc:description rdfs:label "Description"@en ;
+    rdfs:label "Description"@fr ;
+    rdfs:label "Beschreibung"@de .
+
+dc:publisher rdfs:label "Publisher"@en ;
+    rdfs:label "Éditeur"@fr ;
+    rdfs:label "Herausgeber"@de .
+
+dc:date rdfs:label "Date"@en ;
+    rdfs:label "Date"@fr ;
+    rdfs:label "Datum"@de .
+
+dc:type rdfs:label "Type"@en ;
+    rdfs:label "Type"@fr ;
+    rdfs:label "Typ"@de .
+
+dc:format rdfs:label "Format"@en ;
+    rdfs:label "Format"@fr ;
+    rdfs:label "Format"@de .
+
+dc:language rdfs:label "Language"@en ;
+    rdfs:label "Langue"@fr ;
+    rdfs:label "Sprache"@de .
+
+dc:rights rdfs:label "Rights"@en ;
+    rdfs:label "Droits"@fr ;
+    rdfs:label "Rechte"@de .
+
+# Example vocabulary labels
+ex:score rdfs:label "Score"@en ;
+    rdfs:label "Score"@fr ;
+    rdfs:label "Bewertung"@de .
+
+ex:verified rdfs:label "Verified"@en ;
+    rdfs:label "Vérifié"@fr ;
+    rdfs:label "Verifiziert"@de .
+
+ex:active rdfs:label "Active"@en ;
+    rdfs:label "Actif"@fr ;
+    rdfs:label "Aktiv"@de .
+
+ex:pages rdfs:label "Pages"@en ;
+    rdfs:label "Pages"@fr ;
+    rdfs:label "Seiten"@de .
+
+ex:cover rdfs:label "Cover"@en ;
+    rdfs:label "Couverture"@fr ;
+    rdfs:label "Umschlag"@de .
+
+ex:price rdfs:label "Price"@en ;
+    rdfs:label "Prix"@fr ;
+    rdfs:label "Preis"@de .

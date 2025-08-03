@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout Test</title>
+</head>
+<body>
+    <h1>Layout Switch Test</h1>
+    
+    <div>
+        <label>
+            Layout:
+            <select id="layout-test">
+                <option value="table" selected>Table</option>
+                <option value="turtle">Turtle</option>
+            </select>
+        </label>
+        <button onclick="updateLayout()">Update Layout</button>
+    </div>
+    
+    <rdf-viewer id="test-viewer" 
+                layout="table" 
+                data="@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ex: <http://example.org/> .
+
+ex:alice a foaf:Person ;
+    foaf:name 'Alice Smith' ;
+    foaf:age 28 ."></rdf-viewer>
+
+    <script type="module">
+        import './rdf-viewer.ts';
+        
+        window.updateLayout = function() {
+            const layout = document.getElementById('layout-test').value;
+            const viewer = document.getElementById('test-viewer');
+            console.log('Setting layout to:', layout);
+            viewer.setAttribute('layout', layout);
+        };
+    </script>
+</body>
+</html>

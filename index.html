@@ -6,7 +6,7 @@
     <title>RDF Viewer Web Component Test</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Jetbrains Mono', 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 2rem;
             background: #f5f5f5;
@@ -90,7 +90,22 @@
         
         <div class="test-section">
             <h2>Example 1: FOAF Person Data</h2>
+            <p><strong>Vocabularies:</strong> This example uses locally served vocabularies to demonstrate enhanced labels:
+            <br>• <code>FOAF</code> - Friend of a Friend vocabulary
+            <br>• <code>RDFS</code> - RDF Schema vocabulary  
+            <br>• <code>Custom</code> - Local multilingual labels
+            <br>All served from the local server to avoid CORS issues.</p>
             <div class="controls">
+                <label>
+                    Vocabularies:
+                    <select id="vocabularies-1">
+                        <option value="">None</option>
+                        <option value="http://localhost:3002/vocab">Custom Only</option>
+                        <option value="http://localhost:3002/vocab/foaf">FOAF Only</option>
+                        <option value="http://localhost:3002/vocab/rdfs">RDFS Only</option>
+                        <option value="http://localhost:3002/vocab,http://localhost:3002/vocab/foaf,http://localhost:3002/vocab/rdfs" selected>All Vocabularies</option>
+                    </select>
+                </label>
                 <label>
                     Layout:
                     <select id="layout-1">
@@ -107,6 +122,14 @@
                     Expand URIs
                 </label>
                 <label>
+                    <input type="checkbox" id="show-images-inline-1" checked>
+                    Show Images Inline
+                </label>
+                <label>
+                    <input type="checkbox" id="enable-navigation-1" checked>
+                    Enable Navigation
+                </label>
+                <label>
                     Theme:
                     <select id="theme-1">
                         <option value="light">Light</option>
@@ -119,12 +142,35 @@
                 </label>
                 <button onclick="updateViewer1()">Update</button>
             </div>
-            <rdf-viewer id="viewer1" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" preferred-languages="en,de,fr"></rdf-viewer>
+            <rdf-viewer id="viewer1" 
+                        format="turtle" 
+                        layout="table" 
+                        show-namespaces="true"
+                        expand-uris="false" 
+                        theme="light"
+                        preferred-languages="en,de,fr" 
+                        show-images-inline="true" 
+                        enable-navigation="true"
+                        vocabularies="http://localhost:3002/vocab,http://localhost:3002/vocab/foaf,http://localhost:3002/vocab/rdfs" />
         </div>
         
         <div class="test-section">
             <h2>Example 2: Dublin Core Metadata</h2>
+            <p><strong>Vocabularies:</strong> This example demonstrates Dublin Core metadata with enhanced labels from:
+            <br>• <code>DC Elements</code> - Dublin Core Elements vocabulary
+            <br>• <code>DC Terms</code> - Dublin Core Terms vocabulary
+            <br>• <code>Custom</code> - Local multilingual labels</p>
             <div class="controls">
+                <label>
+                    Vocabularies:
+                    <select id="vocabularies-2">
+                        <option value="">None</option>
+                        <option value="http://localhost:3002/vocab">Custom Only</option>
+                        <option value="http://localhost:3002/vocab/dcelements">DC Elements Only</option>
+                        <option value="http://localhost:3002/vocab/dcterms">DC Terms Only</option>
+                        <option value="http://localhost:3002/vocab,http://localhost:3002/vocab/dcelements,http://localhost:3002/vocab/dcterms" selected>All DC Vocabularies</option>
+                    </select>
+                </label>
                 <label>
                     Layout:
                     <select id="layout-2">
@@ -141,6 +187,14 @@
                     Expand URIs
                 </label>
                 <label>
+                    <input type="checkbox" id="show-images-inline-2" checked>
+                    Show Images Inline
+                </label>
+                <label>
+                    <input type="checkbox" id="enable-navigation-2" checked>
+                    Enable Navigation
+                </label>
+                <label>
                     Theme:
                     <select id="theme-2">
                         <option value="light">Light</option>
@@ -149,7 +203,7 @@
                 </label>
                 <button onclick="updateViewer2()">Update</button>
             </div>
-            <rdf-viewer id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light"></rdf-viewer>
+            <rdf-viewer id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="true" enable-navigation="true"></rdf-viewer>
         </div>
         
         <div class="test-section">
@@ -179,6 +233,14 @@
                     Expand URIs
                 </label>
                 <label>
+                    <input type="checkbox" id="show-images-inline-3" checked>
+                    Show Images Inline
+                </label>
+                <label>
+                    <input type="checkbox" id="enable-navigation-3" checked>
+                    Enable Navigation
+                </label>
+                <label>
                     Theme:
                     <select id="theme-3">
                         <option value="light">Light</option>
@@ -200,7 +262,7 @@ ex:person1 a foaf:Person ;
     foaf:phone <tel:+1234567890> ;
     ex:score 95.5 ;
     ex:active true .</textarea>
-            <rdf-viewer id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light"></rdf-viewer>
+            <rdf-viewer id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="true" enable-navigation="true"></rdf-viewer>
         </div>
     </div>
 

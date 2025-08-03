@@ -10,6 +10,8 @@ export interface RDFViewerConfig {
   layout?: 'turtle' | 'table';
   preferredLanguages?: string[];
   vocabularies?: string[];
+  showImagesInline?: boolean;
+  enableNavigation?: boolean;
 }
 
 /**
@@ -20,10 +22,13 @@ export class RDFViewer extends HTMLElement {
   private vocabularyStore: Store;
   private parser: Parser;
   private config: RDFViewerConfig;
+  private currentSubject: string | null = null;
+  private loadedVocabularies: Set<string> = new Set();
+  private contentTypeCache: Map<string, { isImage: boolean, isRDF: boolean, isHTML: boolean, contentType?: string }> = new Map();
   declare shadowRoot: ShadowRoot;
 
   static get observedAttributes() {
-    return ['data', 'format', 'show-namespaces', 'expand-uris', 'theme', 'layout', 'preferred-languages', 'vocabularies'];
+    return ['data', 'format', 'show-namespaces', 'expand-uris', 'theme', 'layout', 'preferred-languages', 'vocabularies', 'show-images-inline', 'enable-navigation'];
   }
 
   constructor() {
@@ -38,7 +43,9 @@ export class RDFViewer extends HTMLElement {
       theme: 'light',
       layout: 'table',
       preferredLanguages: ['en', 'en-US', 'en-GB'],
-      vocabularies: []
+      vocabularies: [],
+      showImagesInline: true,
+      enableNavigation: true
     };
 
     // Create shadow DOM
@@ -85,9 +92,23 @@ export class RDFViewer extends HTMLElement {
 
     const vocabularies = this.getAttribute('vocabularies');
     if (vocabularies) {
-      this.config.vocabularies = vocabularies.split(',').map(vocab => vocab.trim());
-      this.loadVocabularies();
+      const newVocabularies = vocabularies.split(',').map(vocab => vocab.trim());
+      const vocabulariesChanged = !this.config.vocabularies || 
+        this.config.vocabularies.length !== newVocabularies.length ||
+        !this.config.vocabularies.every(v => newVocabularies.includes(v));
+      
+      this.config.vocabularies = newVocabularies;
+      
+      if (vocabulariesChanged) {
+        this.loadVocabularies();
+      }
     }
+
+    const showImagesInline = this.getAttribute('show-images-inline');
+    if (showImagesInline !== null) this.config.showImagesInline = showImagesInline !== 'false';
+
+    const enableNavigation = this.getAttribute('enable-navigation');
+    if (enableNavigation !== null) this.config.enableNavigation = enableNavigation !== 'false';
   }
 
   private async loadData() {
@@ -111,10 +132,12 @@ export class RDFViewer extends HTMLElement {
   private render() {
     const styles = this.getStyles();
     const content = this.renderContent();
+    
+    const imageClass = this.config.showImagesInline ? '' : ' images-disabled';
 
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
-      <div class="rdf-viewer ${this.config.theme}">
+      <div class="rdf-viewer ${this.config.theme}${imageClass}">
         ${content}
       </div>
     `;
@@ -122,9 +145,10 @@ export class RDFViewer extends HTMLElement {
 
   private renderError(error: Error) {
     const styles = this.getStyles();
+    const imageClass = this.config.showImagesInline ? '' : ' images-disabled';
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
-      <div class="rdf-viewer ${this.config.theme}">
+      <div class="rdf-viewer ${this.config.theme}${imageClass}">
         <div class="error">
           <h3>Error parsing RDF data:</h3>
           <pre>${error.message}</pre>
@@ -146,6 +170,11 @@ export class RDFViewer extends HTMLElement {
       html += this.renderNamespaces();
     }
 
+    // Add navigation controls if enabled
+    if (this.config.enableNavigation && this.currentSubject) {
+      html += this.renderNavigationControls();
+    }
+
     if (this.config.layout === 'table') {
       html += this.renderTableLayout(quads);
     } else {
@@ -154,6 +183,18 @@ export class RDFViewer extends HTMLElement {
 
     html += '</div>';
     return html;
+  }
+
+  private renderNavigationControls(): string {
+    const currentSubjectLabel = this.getDisplayLabel(this.currentSubject!);
+    return `
+      <div class="navigation-controls">
+        <button class="nav-button show-all" onclick="this.getRootNode().host.showAllSubjects()">
+          ← Show All Subjects
+        </button>
+        <span class="current-subject">Viewing: ${this.escapeHtml(currentSubjectLabel)}</span>
+      </div>
+    `;
   }
 
   private renderTableLayout(quads: Quad[]): string {
@@ -166,6 +207,14 @@ export class RDFViewer extends HTMLElement {
       }
       subjects.get(subjectValue)!.push(quad);
     });
+
+    // If currentSubject is set, show only that subject
+    if (this.currentSubject && subjects.has(this.currentSubject)) {
+      const filteredSubjects = new Map();
+      filteredSubjects.set(this.currentSubject, subjects.get(this.currentSubject)!);
+      subjects.clear();
+      subjects.set(this.currentSubject, filteredSubjects.get(this.currentSubject));
+    }
 
     let html = '<div class="table-layout">';
     
@@ -205,7 +254,7 @@ export class RDFViewer extends HTMLElement {
       const displayPredicate = this.getDisplayLabel(predicateValue);
       
       predQuads.forEach((quad, index) => {
-        const displayObject = this.renderObjectValue(quad.object.value, quad.object.termType);
+        const displayObject = this.renderObjectValue(quad.object.value, quad.object.termType, true);
         
         html += `<tr>
           <td class="property-cell">
@@ -230,6 +279,14 @@ export class RDFViewer extends HTMLElement {
       }
       subjects.get(subjectValue)!.push(quad);
     });
+
+    // If currentSubject is set, show only that subject
+    if (this.currentSubject && subjects.has(this.currentSubject)) {
+      const filteredSubjects = new Map();
+      filteredSubjects.set(this.currentSubject, subjects.get(this.currentSubject)!);
+      subjects.clear();
+      subjects.set(this.currentSubject, filteredSubjects.get(this.currentSubject));
+    }
 
     let html = '<div class="turtle-layout">';
     subjects.forEach((subjectQuads, subjectValue) => {
@@ -273,7 +330,7 @@ export class RDFViewer extends HTMLElement {
           <div class="objects">`;
         
         predQuads.forEach((quad, index) => {
-          const displayObject = this.renderObjectValue(quad.object.value, quad.object.termType);
+          const displayObject = this.renderObjectValue(quad.object.value, quad.object.termType, true);
           html += `<span class="object">${displayObject}</span>`;
           if (index < predQuads.length - 1) html += ', ';
         });
@@ -469,6 +526,56 @@ export class RDFViewer extends HTMLElement {
         color: #4fc3f7;
       }
 
+      /* Navigation Controls */
+      .navigation-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 0.75rem 1rem;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+      }
+
+      .dark .navigation-controls {
+        background: #2a2a2a;
+        border-color: #404040;
+      }
+
+      .nav-button {
+        background: #0066cc;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+      }
+
+      .nav-button:hover {
+        background: #0052a3;
+      }
+
+      .dark .nav-button {
+        background: #4fc3f7;
+        color: #1e1e1e;
+      }
+
+      .dark .nav-button:hover {
+        background: #29b6f6;
+      }
+
+      .current-subject {
+        font-weight: 500;
+        color: #666;
+      }
+
+      .dark .current-subject {
+        color: #999;
+      }
+
       /* Table Layout Styles */
       .table-layout {
         display: flex;
@@ -597,6 +704,35 @@ export class RDFViewer extends HTMLElement {
         color: #4fc3f7;
       }
 
+      .uri-link {
+        background: none;
+        border: none;
+        color: #0066cc;
+        text-decoration: none;
+        cursor: pointer;
+        padding: 0;
+        font: inherit;
+        display: inline;
+      }
+
+      .uri-link:hover {
+        text-decoration: underline;
+      }
+
+      .dark .uri-link {
+        color: #4fc3f7;
+      }
+
+      .uri-link.navigable {
+        font-weight: 500;
+      }
+
+      .uri-link.navigable::after {
+        content: " →";
+        font-size: 0.8em;
+        opacity: 0.7;
+      }
+
       .literal {
         color: #009900;
       }
@@ -670,10 +806,46 @@ export class RDFViewer extends HTMLElement {
         border-radius: 4px;
         border: 1px solid #ddd;
         object-fit: cover;
+        transition: transform 0.2s ease;
+      }
+
+      .resource-image:hover {
+        transform: scale(1.05);
+        cursor: pointer;
       }
 
       .dark .resource-image {
         border-color: #404040;
+      }
+
+      /* When images are disabled inline */
+      .rdf-viewer.images-disabled .resource-image {
+        display: none;
+      }
+
+      /* Content type hints */
+      .content-type-hint {
+        font-size: 0.8em;
+        opacity: 0.7;
+        font-style: italic;
+      }
+
+      .rdf-resource {
+        border-left: 3px solid #2196f3;
+        padding-left: 0.25rem;
+      }
+
+      .dark .rdf-resource {
+        border-left-color: #64b5f6;
+      }
+
+      .html-resource {
+        border-left: 3px solid #ff9800;
+        padding-left: 0.25rem;
+      }
+
+      .dark .html-resource {
+        border-left-color: #ffcc02;
       }
 
       /* Responsive design */
@@ -739,6 +911,8 @@ export class RDFViewer extends HTMLElement {
     if (config.layout) this.setAttribute('layout', config.layout);
     if (config.preferredLanguages) this.setAttribute('preferred-languages', config.preferredLanguages.join(','));
     if (config.vocabularies) this.setAttribute('vocabularies', config.vocabularies.join(','));
+    if (config.showImagesInline !== undefined) this.setAttribute('show-images-inline', config.showImagesInline.toString());
+    if (config.enableNavigation !== undefined) this.setAttribute('enable-navigation', config.enableNavigation.toString());
     
     this.render();
   }
@@ -756,7 +930,7 @@ export class RDFViewer extends HTMLElement {
     if (!this.config.vocabularies) {
       this.config.vocabularies = [];
     }
-    if (!this.config.vocabularies.includes(url)) {
+    if (!this.config.vocabularies.includes(url) && !this.loadedVocabularies.has(url)) {
       this.config.vocabularies.push(url);
       await this.loadVocabulary(url);
       this.setAttribute('vocabularies', this.config.vocabularies.join(','));
@@ -767,6 +941,7 @@ export class RDFViewer extends HTMLElement {
   public removeVocabulary(url: string) {
     if (this.config.vocabularies) {
       this.config.vocabularies = this.config.vocabularies.filter(v => v !== url);
+      this.loadedVocabularies.delete(url);
       this.setAttribute('vocabularies', this.config.vocabularies.join(','));
       // Note: This doesn't remove the vocabulary data from the store
       // For full removal, we'd need to reload all vocabularies
@@ -778,14 +953,18 @@ export class RDFViewer extends HTMLElement {
     if (!this.config.vocabularies || this.config.vocabularies.length === 0) return;
 
     try {
-      // Clear existing vocabulary data
-      this.vocabularyStore = new Store();
+      // Only load vocabularies that haven't been loaded yet
+      const vocabulariesToLoad = this.config.vocabularies.filter(url => 
+        url.trim() && !this.loadedVocabularies.has(url.trim())
+      );
 
-      // Load each vocabulary
-      for (const vocabUrl of this.config.vocabularies) {
-        if (vocabUrl.trim()) {
-          await this.loadVocabulary(vocabUrl.trim());
-        }
+      if (vocabulariesToLoad.length === 0) {
+        return; // No new vocabularies to load
+      }
+
+      // Load each new vocabulary
+      for (const vocabUrl of vocabulariesToLoad) {
+        await this.loadVocabulary(vocabUrl.trim());
       }
     } catch (error) {
       console.warn('Error loading vocabularies:', error);
@@ -794,32 +973,46 @@ export class RDFViewer extends HTMLElement {
 
   private async loadVocabulary(url: string) {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        mode: 'cors',
+        headers: {
+          'Accept': 'text/turtle, application/rdf+xml, application/n-triples, application/n-quads, */*'
+        }
+      });
+      
       if (!response.ok) {
         console.warn(`Failed to load vocabulary from ${url}: ${response.statusText}`);
         return;
       }
 
-      const vocabData = await response.text();
+      let vocabData = await response.text();
       const contentType = response.headers.get('content-type') || '';
       
       // Determine format from content type or URL
       let format = 'turtle';
-      if (contentType.includes('application/rdf+xml') || url.endsWith('.rdf') || url.endsWith('.owl')) {
-        format = 'rdf/xml';
-      } else if (contentType.includes('application/n-triples') || url.endsWith('.nt')) {
+      if (contentType.includes('application/n-triples') || url.endsWith('.nt')) {
         format = 'n-triples';
       } else if (contentType.includes('application/n-quads') || url.endsWith('.nq')) {
         format = 'n-quads';
+      } else if (contentType.includes('application/trig') || url.endsWith('.trig')) {
+        format = 'trig';
       }
+      // Note: N3.js doesn't support RDF/XML, so we serve all vocabularies as Turtle
 
       const vocabParser = new Parser({ format: format as any });
       const quads = vocabParser.parse(vocabData);
       this.vocabularyStore.addQuads(quads);
       
+      // Mark this vocabulary as loaded
+      this.loadedVocabularies.add(url);
+      
       console.log(`Loaded vocabulary from ${url}: ${quads.length} triples`);
     } catch (error) {
-      console.warn(`Error loading vocabulary from ${url}:`, error);
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn(`CORS blocked or network error loading vocabulary from ${url}. This is expected for many external vocabulary URLs when developing locally. The component will still work but won't have enhanced labels from this vocabulary.`);
+      } else {
+        console.warn(`Error loading vocabulary from ${url}:`, error);
+      }
     }
   }
 
@@ -877,13 +1070,13 @@ export class RDFViewer extends HTMLElement {
     return null;
   }
 
-  private renderObjectValue(value: string, termType: string): string {
+  private renderObjectValue(value: string, termType: string, enableNavigation: boolean = false): string {
     if (termType === 'Literal') {
       return this.renderLiteralValue(value);
     }
 
     if (value.startsWith('http://') || value.startsWith('https://')) {
-      return this.renderURIValue(value);
+      return this.renderURIValue(value, enableNavigation);
     }
 
     return `<span class="term">${this.escapeHtml(value)}</span>`;
@@ -920,20 +1113,48 @@ export class RDFViewer extends HTMLElement {
     return `<span class="literal">"${this.escapeHtml(value)}"</span>`;
   }
 
-  private renderURIValue(uri: string): string {
-    // Check if it's an image
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
-    const isImage = imageExtensions.some(ext => uri.toLowerCase().includes(ext));
+  private renderURIValue(uri: string, enableNavigation: boolean = false): string {
+    // Check cache first, then fall back to extension-based detection
+    let isImage = false;
+    let isRDF = false;
+    let isHTML = false;
+    
+    const cached = this.contentTypeCache.get(uri);
+    if (cached) {
+      isImage = cached.isImage;
+      isRDF = cached.isRDF;
+      isHTML = cached.isHTML;
+    } else {
+      // Fallback to extension-based detection
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+      const rdfExtensions = ['.rdf', '.ttl', '.nt', '.nq', '.jsonld'];
+      const htmlExtensions = ['.html', '.htm'];
+      
+      const lowerUri = uri.toLowerCase();
+      isImage = imageExtensions.some(ext => lowerUri.includes(ext));
+      isRDF = rdfExtensions.some(ext => lowerUri.includes(ext));
+      isHTML = htmlExtensions.some(ext => lowerUri.includes(ext));
+      
+      // Also check for common image hosting services that don't use extensions
+      const imageServices = ['picsum.photos', 'via.placeholder.com', 'placehold.it', 'unsplash.com/photos', 'images.unsplash.com'];
+      if (!isImage) {
+        isImage = imageServices.some(service => lowerUri.includes(service));
+      }
+      
+      // Start background content negotiation
+      this.checkContentTypesAsync(uri);
+    }
     
     if (isImage) {
-      const displayUri = this.config.expandURIs ? uri : this.shortenURI(uri);
-      return `<div class="uri-value image-container">
-        <a href="${this.escapeHtml(uri)}" target="_blank" class="uri" title="${this.escapeHtml(uri)}">
-          ${this.escapeHtml(displayUri)}
-        </a>
-        <img src="${this.escapeHtml(uri)}" alt="Resource image" class="resource-image" 
-             onerror="this.style.display='none';" loading="lazy">
-      </div>`;
+      return this.renderImageURI(uri, enableNavigation);
+    }
+    
+    if (isRDF) {
+      return this.renderRDFURI(uri, enableNavigation);
+    }
+    
+    if (isHTML) {
+      return this.renderHTMLURI(uri, enableNavigation);
     }
 
     // Check if it's an email URI
@@ -948,9 +1169,155 @@ export class RDFViewer extends HTMLElement {
       return `<a href="${this.escapeHtml(uri)}" class="uri phone">${this.escapeHtml(phone)}</a>`;
     }
 
-    // Regular URI
+    // Regular URI - check if it can be navigated
     const displayUri = this.config.expandURIs ? uri : this.shortenURI(uri);
+    
+    if (enableNavigation && this.config.enableNavigation && this.hasSubjectData(uri)) {
+      return `<button class="uri-link navigable" onclick="this.getRootNode().host.navigateToSubject('${this.escapeHtml(uri)}')" title="Navigate to ${this.escapeHtml(uri)}">
+        ${this.escapeHtml(displayUri)}
+      </button>`;
+    }
+    
     return `<a href="${this.escapeHtml(uri)}" target="_blank" class="uri" title="${this.escapeHtml(uri)}">${this.escapeHtml(displayUri)}</a>`;
+  }
+
+  private renderImageURI(uri: string, enableNavigation: boolean): string {
+    const displayUri = this.config.expandURIs ? uri : this.shortenURI(uri);
+    let imageHtml = '';
+    
+    if (this.config.showImagesInline) {
+      imageHtml = `<img src="${this.escapeHtml(uri)}" alt="Resource image" class="resource-image" 
+                   onerror="this.style.display='none';" loading="lazy">`;
+    }
+    
+    const linkHtml = enableNavigation && this.config.enableNavigation && this.hasSubjectData(uri)
+      ? `<button class="uri-link navigable" onclick="this.getRootNode().host.navigateToSubject('${this.escapeHtml(uri)}')" title="Navigate to ${this.escapeHtml(uri)}">
+           ${this.escapeHtml(displayUri)}
+         </button>`
+      : `<a href="${this.escapeHtml(uri)}" target="_blank" class="uri" title="${this.escapeHtml(uri)}">
+           ${this.escapeHtml(displayUri)}
+         </a>`;
+    
+    return `<div class="uri-value image-container">
+      ${linkHtml}
+      ${imageHtml}
+    </div>`;
+  }
+
+  private renderRDFURI(uri: string, enableNavigation: boolean): string {
+    const displayUri = this.config.expandURIs ? uri : this.shortenURI(uri);
+    const cached = this.contentTypeCache.get(uri);
+    const formatHint = cached?.contentType ? ` (${cached.contentType})` : ' (RDF)';
+    
+    if (enableNavigation && this.config.enableNavigation && this.hasSubjectData(uri)) {
+      return `<button class="uri-link navigable rdf-resource" onclick="this.getRootNode().host.navigateToSubject('${this.escapeHtml(uri)}')" title="Navigate to ${this.escapeHtml(uri)}">
+        ${this.escapeHtml(displayUri)}<span class="content-type-hint">${formatHint}</span>
+      </button>`;
+    }
+    
+    return `<a href="${this.escapeHtml(uri)}" target="_blank" class="uri rdf-resource" title="${this.escapeHtml(uri)}">
+      ${this.escapeHtml(displayUri)}<span class="content-type-hint">${formatHint}</span>
+    </a>`;
+  }
+
+  private renderHTMLURI(uri: string, enableNavigation: boolean): string {
+    const displayUri = this.config.expandURIs ? uri : this.shortenURI(uri);
+    
+    if (enableNavigation && this.config.enableNavigation && this.hasSubjectData(uri)) {
+      return `<button class="uri-link navigable html-resource" onclick="this.getRootNode().host.navigateToSubject('${this.escapeHtml(uri)}')" title="Navigate to ${this.escapeHtml(uri)}">
+        ${this.escapeHtml(displayUri)}<span class="content-type-hint"> (HTML)</span>
+      </button>`;
+    }
+    
+    return `<a href="${this.escapeHtml(uri)}" target="_blank" class="uri html-resource" title="${this.escapeHtml(uri)}">
+      ${this.escapeHtml(displayUri)}<span class="content-type-hint"> (HTML)</span>
+    </a>`;
+  }
+
+  // Async content negotiation that updates the cache and re-renders
+  private async checkContentTypesAsync(uri: string): Promise<void> {
+    if (this.contentTypeCache.has(uri)) {
+      return; // Already checked
+    }
+    
+    try {
+      const result = await this.checkContentTypes(uri);
+      this.contentTypeCache.set(uri, result);
+      
+      // Re-render if this URI is currently visible
+      this.render();
+    } catch (error) {
+      // Silently fail for content negotiation
+    }
+  }
+
+  private hasSubjectData(uri: string): boolean {
+    const quads = this.store.getQuads(namedNode(uri), null, null, null);
+    return quads.length > 0;
+  }
+
+  // Content negotiation to check what content types are available for a URI
+  private async checkContentTypes(uri: string): Promise<{ 
+    isImage: boolean, 
+    isRDF: boolean, 
+    isHTML: boolean,
+    contentType?: string 
+  }> {
+    try {
+      const response = await fetch(uri, {
+        method: 'HEAD',
+        headers: {
+          'Accept': 'image/*, application/rdf+xml, text/turtle, application/n-triples, text/html, */*'
+        }
+      });
+      
+      const contentType = response.headers.get('content-type') || '';
+      
+      return {
+        isImage: contentType.startsWith('image/'),
+        isRDF: contentType.includes('application/rdf+xml') || 
+               contentType.includes('text/turtle') || 
+               contentType.includes('application/n-triples') ||
+               contentType.includes('application/n-quads') ||
+               contentType.includes('application/ld+json'),
+        isHTML: contentType.includes('text/html'),
+        contentType
+      };
+    } catch (error) {
+      // Fallback to extension-based detection if HEAD request fails
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+      const rdfExtensions = ['.rdf', '.ttl', '.nt', '.nq', '.jsonld'];
+      const htmlExtensions = ['.html', '.htm'];
+      
+      const lowerUri = uri.toLowerCase();
+      
+      let isImage = imageExtensions.some(ext => lowerUri.includes(ext));
+      
+      // Also check for common image hosting services
+      if (!isImage) {
+        const imageServices = ['picsum.photos', 'via.placeholder.com', 'placehold.it', 'unsplash.com/photos', 'images.unsplash.com'];
+        isImage = imageServices.some(service => lowerUri.includes(service));
+      }
+      
+      return {
+        isImage,
+        isRDF: rdfExtensions.some(ext => lowerUri.includes(ext)),
+        isHTML: htmlExtensions.some(ext => lowerUri.includes(ext))
+      };
+    }
+  }
+
+  // Navigation methods
+  public navigateToSubject(subjectUri: string) {
+    if (this.hasSubjectData(subjectUri)) {
+      this.currentSubject = subjectUri;
+      this.render();
+    }
+  }
+
+  public showAllSubjects() {
+    this.currentSubject = null;
+    this.render();
   }
 }
 

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Negotiation Test</title>
+</head>
+<body>
+    <h1>Content Negotiation Test</h1>
+    
+    <rdf-viewer id="test-viewer" 
+                layout="table" 
+                show-images-inline="true"
+                data="@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ex: <http://example.org/> .
+
+ex:alice a foaf:Person ;
+    foaf:name 'Alice Smith' ;
+    foaf:depiction <https://picsum.photos/150/150> ;
+    foaf:homepage <https://www.w3.org/> ;
+    ex:rdfDocument <http://localhost:3001/vocab/foaf> ;
+    ex:imageFile <https://via.placeholder.com/100x100.png> ."></rdf-viewer>
+
+    <script type="module" src="./rdf-viewer.ts"></script>
+</body>
+</html>

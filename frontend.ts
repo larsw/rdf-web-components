@@ -29,7 +29,7 @@ ex:bob a foaf:Person ;
     foaf:birthday "1992-11-03"^^xsd:date ;
     foaf:mbox <mailto:bob@example.org> ;
     foaf:knows ex:alice ;
-    foaf:workplaceHomepage <https://company.example.org> ;
+    foaf:workplaceHomepage <https://company.example.org/> ;
     foaf:depiction <https://picsum.photos/200/200?random=2> ;
     ex:score 92.3 ;
     ex:verified false .
@@ -138,28 +138,44 @@ function setupControls() {
     const layout1 = (document.getElementById('layout-1') as HTMLSelectElement).value;
     const showNamespaces1 = (document.getElementById('show-namespaces-1') as HTMLInputElement).checked;
     const expandUris1 = (document.getElementById('expand-uris-1') as HTMLInputElement).checked;
+    const showImagesInline1 = (document.getElementById('show-images-inline-1') as HTMLInputElement).checked;
+    const enableNavigation1 = (document.getElementById('enable-navigation-1') as HTMLInputElement).checked;
     const theme1 = (document.getElementById('theme-1') as HTMLSelectElement).value;
     const languages1 = (document.getElementById('languages-1') as HTMLInputElement).value;
+    const vocabularies1 = (document.getElementById('vocabularies-1') as HTMLSelectElement)?.value || '';
     const viewer1 = document.getElementById('viewer1') as any;
     
     viewer1.setAttribute('layout', layout1);
     viewer1.setAttribute('show-namespaces', showNamespaces1.toString());
     viewer1.setAttribute('expand-uris', expandUris1.toString());
+    viewer1.setAttribute('show-images-inline', showImagesInline1.toString());
+    viewer1.setAttribute('enable-navigation', enableNavigation1.toString());
     viewer1.setAttribute('theme', theme1);
     viewer1.setAttribute('preferred-languages', languages1);
+    if (vocabularies1) {
+        viewer1.setAttribute('vocabularies', vocabularies1);
+    }
 };
 
 (window as any).updateViewer2 = function() {
     const layout2 = (document.getElementById('layout-2') as HTMLSelectElement).value;
     const showNamespaces2 = (document.getElementById('show-namespaces-2') as HTMLInputElement).checked;
     const expandUris2 = (document.getElementById('expand-uris-2') as HTMLInputElement).checked;
+    const showImagesInline2 = (document.getElementById('show-images-inline-2') as HTMLInputElement).checked;
+    const enableNavigation2 = (document.getElementById('enable-navigation-2') as HTMLInputElement).checked;
     const theme2 = (document.getElementById('theme-2') as HTMLSelectElement).value;
+    const vocabularies2 = (document.getElementById('vocabularies-2') as HTMLSelectElement)?.value || '';
     const viewer2 = document.getElementById('viewer2') as any;
     
     viewer2.setAttribute('layout', layout2);
     viewer2.setAttribute('show-namespaces', showNamespaces2.toString());
     viewer2.setAttribute('expand-uris', expandUris2.toString());
+    viewer2.setAttribute('show-images-inline', showImagesInline2.toString());
+    viewer2.setAttribute('enable-navigation', enableNavigation2.toString());
     viewer2.setAttribute('theme', theme2);
+    if (vocabularies2) {
+        viewer2.setAttribute('vocabularies', vocabularies2);
+    }
 };
 
 // Function to update the custom viewer with user input
