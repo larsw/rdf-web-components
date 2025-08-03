@@ -17,7 +17,7 @@ class MockElement {
     return this.shadowRoot;
   }
   
-  static observedAttributes = ['data', 'format', 'show-namespaces', 'expand-uris', 'theme'];
+  static observedAttributes = ['data', 'format', 'show-namespaces', 'expand-uris', 'theme', 'layout', 'preferred-languages', 'vocabularies'];
 }
 
 class MockHTMLElement extends MockElement {
@@ -61,6 +61,9 @@ test("RDFViewer has correct observed attributes", () => {
   expect(attributes).toContain('show-namespaces');
   expect(attributes).toContain('expand-uris');
   expect(attributes).toContain('theme');
+  expect(attributes).toContain('layout');
+  expect(attributes).toContain('preferred-languages');
+  expect(attributes).toContain('vocabularies');
 });
 
 test("RDFViewer setData method works", () => {
