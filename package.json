@@ -2,8 +2,13 @@
   "name": "rdf-web-components",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+  "dev": "bun --hot index.ts",
+  "start": "bun index.ts",
+  "build": "bun build ./index.html --outdir dist"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+  "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"

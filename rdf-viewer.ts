@@ -1,6 +1,6 @@
 import { Parser, Store, DataFactory, Quad } from 'n3';
 
-const { namedNode, literal, defaultGraph } = DataFactory;
+const { namedNode } = DataFactory;
 
 export interface RDFViewerConfig {
   format?: 'turtle' | 'n-triples' | 'n-quads' | 'trig' | 'json-ld';
@@ -12,6 +12,7 @@ export interface RDFViewerConfig {
   vocabularies?: string[];
   showImagesInline?: boolean;
   enableNavigation?: boolean;
+  enableContentNegotiation?: boolean; // when true, perform HEAD requests to detect content types
 }
 
 /**
@@ -25,10 +26,11 @@ export class RDFViewer extends HTMLElement {
   private currentSubject: string | null = null;
   private loadedVocabularies: Set<string> = new Set();
   private contentTypeCache: Map<string, { isImage: boolean, isRDF: boolean, isHTML: boolean, contentType?: string }> = new Map();
+  private renderFrame: number | null = null;
   declare shadowRoot: ShadowRoot;
 
   static get observedAttributes() {
-    return ['data', 'format', 'show-namespaces', 'expand-uris', 'theme', 'layout', 'preferred-languages', 'vocabularies', 'show-images-inline', 'enable-navigation'];
+    return ['data', 'format', 'show-namespaces', 'expand-uris', 'theme', 'layout', 'preferred-languages', 'vocabularies', 'show-images-inline', 'enable-navigation', 'enable-content-negotiation'];
   }
 
   constructor() {
@@ -45,7 +47,8 @@ export class RDFViewer extends HTMLElement {
       preferredLanguages: ['en', 'en-US', 'en-GB'],
       vocabularies: [],
       showImagesInline: true,
-      enableNavigation: true
+  enableNavigation: true,
+  enableContentNegotiation: false
     };
 
     // Create shadow DOM
@@ -64,7 +67,7 @@ export class RDFViewer extends HTMLElement {
       if (name === 'data') {
         this.loadData();
       } else {
-        this.render();
+  this.scheduleRender();
       }
     }
   }
@@ -109,6 +112,9 @@ export class RDFViewer extends HTMLElement {
 
     const enableNavigation = this.getAttribute('enable-navigation');
     if (enableNavigation !== null) this.config.enableNavigation = enableNavigation !== 'false';
+
+  const enableContentNegotiation = this.getAttribute('enable-content-negotiation');
+  if (enableContentNegotiation !== null) this.config.enableContentNegotiation = enableContentNegotiation !== 'false';
   }
 
   private async loadData() {
@@ -141,6 +147,14 @@ export class RDFViewer extends HTMLElement {
         ${content}
       </div>
     `;
+  }
+
+  private scheduleRender() {
+    if (this.renderFrame != null) return;
+    this.renderFrame = requestAnimationFrame(() => {
+      this.renderFrame = null;
+      this.render();
+    });
   }
 
   private renderError(error: Error) {
@@ -393,11 +407,23 @@ export class RDFViewer extends HTMLElement {
     quads.forEach((quad: Quad) => {
       [quad.subject.value, quad.predicate.value, quad.object.value].forEach(value => {
         if (value.startsWith('http://') || value.startsWith('https://')) {
+          // Ensure the URI is well-formed with a proper domain
+          const uriMatch = value.match(/^https?:\/\/[^\/\s]+/);
+          if (!uriMatch) {
+            return; // Skip malformed URIs
+          }
+          
           const lastSlash = Math.max(value.lastIndexOf('/'), value.lastIndexOf('#'));
           if (lastSlash > 0) {
             const namespace = value.substring(0, lastSlash + 1);
+            
+            // Additional validation: ensure namespace ends with / or #
+            if (!namespace.endsWith('/') && !namespace.endsWith('#')) {
+              return;
+            }
+            
             const prefix = this.generatePrefix(namespace);
-            if (!namespaces.has(prefix)) {
+            if (prefix && !namespaces.has(prefix)) {
               namespaces.set(prefix, namespace);
             }
           }
@@ -408,7 +434,7 @@ export class RDFViewer extends HTMLElement {
     return namespaces;
   }
 
-  private generatePrefix(namespace: string): string {
+  private generatePrefix(namespace: string): string | null {
     const commonPrefixes: { [key: string]: string } = {
       'http://www.w3.org/1999/02/22-rdf-syntax-ns#': 'rdf',
       'http://www.w3.org/2000/01/rdf-schema#': 'rdfs',
@@ -427,12 +453,18 @@ export class RDFViewer extends HTMLElement {
     if (match && match[1]) {
       const domain = match[1].replace(/^www\./, '');
       const parts = domain.split('.');
-      if (parts[0]) {
-        return parts[0].substring(0, 3);
+      if (parts[0] && parts[0].length > 0) {
+        // Ensure we have a valid domain part
+        const prefix = parts[0].substring(0, 3).toLowerCase();
+        if (prefix.length > 0) {
+          return prefix;
+        }
       }
     }
 
-    return 'ns';
+    // If we can't generate a meaningful prefix, don't create one
+    // This prevents invalid prefixes like 'ns: <https://>'
+    return null;
   }
 
   private escapeHtml(text: string): string {
@@ -1110,7 +1142,7 @@ export class RDFViewer extends HTMLElement {
     }
 
     // Default literal
-    return `<span class="literal">"${this.escapeHtml(value)}"</span>`;
+    return `<span class="literal">${this.escapeHtml(value)}</span>`;
   }
 
   private renderURIValue(uri: string, enableNavigation: boolean = false): string {
@@ -1141,8 +1173,10 @@ export class RDFViewer extends HTMLElement {
         isImage = imageServices.some(service => lowerUri.includes(service));
       }
       
-      // Start background content negotiation
-      this.checkContentTypesAsync(uri);
+      // Start background content negotiation only if enabled
+      if (this.config.enableContentNegotiation) {
+        this.checkContentTypesAsync(uri);
+      }
     }
     
     if (isImage) {
@@ -1199,8 +1233,8 @@ export class RDFViewer extends HTMLElement {
          </a>`;
     
     return `<div class="uri-value image-container">
-      ${linkHtml}
       ${imageHtml}
+      ${linkHtml}
     </div>`;
   }
 
@@ -1239,13 +1273,13 @@ export class RDFViewer extends HTMLElement {
     if (this.contentTypeCache.has(uri)) {
       return; // Already checked
     }
+  if (!this.config.enableContentNegotiation) return;
     
     try {
       const result = await this.checkContentTypes(uri);
-      this.contentTypeCache.set(uri, result);
-      
-      // Re-render if this URI is currently visible
-      this.render();
+  this.contentTypeCache.set(uri, result);
+  // Schedule a re-render to batch updates
+  this.scheduleRender();
     } catch (error) {
       // Silently fail for content negotiation
     }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDF Viewer Web Component Test</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
     <style>
         body {
             font-family: 'Jetbrains Mono', 'Segoe UI', Roboto, sans-serif;
@@ -55,6 +56,10 @@
             padding: 0.5rem;
             border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        .controls select {
+            background: #fff;
+            color: #333;
         }
         
         .controls button {
@@ -122,7 +127,7 @@
                     Expand URIs
                 </label>
                 <label>
-                    <input type="checkbox" id="show-images-inline-1" checked>
+                    <input type="checkbox" id="show-images-inline-1">
                     Show Images Inline
                 </label>
                 <label>
@@ -149,8 +154,8 @@
                         expand-uris="false" 
                         theme="light"
                         preferred-languages="en,de,fr" 
-                        show-images-inline="true" 
-                        enable-navigation="true"
+                        show-images-inline="false" 
+                        enable-navigation="true" enable-content-negotiation="false"
                         vocabularies="http://localhost:3002/vocab,http://localhost:3002/vocab/foaf,http://localhost:3002/vocab/rdfs" />
         </div>
         
@@ -187,7 +192,7 @@
                     Expand URIs
                 </label>
                 <label>
-                    <input type="checkbox" id="show-images-inline-2" checked>
+                    <input type="checkbox" id="show-images-inline-2">
                     Show Images Inline
                 </label>
                 <label>
@@ -203,7 +208,7 @@
                 </label>
                 <button onclick="updateViewer2()">Update</button>
             </div>
-            <rdf-viewer id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="true" enable-navigation="true"></rdf-viewer>
+            <rdf-viewer id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-viewer>
         </div>
         
         <div class="test-section">
@@ -233,7 +238,7 @@
                     Expand URIs
                 </label>
                 <label>
-                    <input type="checkbox" id="show-images-inline-3" checked>
+                    <input type="checkbox" id="show-images-inline-3">
                     Show Images Inline
                 </label>
                 <label>
@@ -248,21 +253,26 @@
                     </select>
                 </label>
                 <button onclick="updateCustomViewer()">Update Viewer</button>
+                                <button onclick="(document.getElementById('custom-data').value = (window.sampleData?.smallTestData || ''), updateCustomViewer())">Load Small Test Data</button>
+                                <button onclick="(document.getElementById('custom-data').value = (window.sampleData?.comprehensiveTestData || ''), updateCustomViewer())">Load Large Test Data</button>
             </div>
-            <textarea class="data-input" id="custom-data" placeholder="Enter your RDF data here...">@prefix ex: <http://example.org/> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+                        <textarea class="data-input" id="custom-data" placeholder="Enter your RDF data here...">@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ex: <http://example.org/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 ex:person1 a foaf:Person ;
-    foaf:name "John Doe" ;
+    foaf:name "John Doe"@en ;
+    foaf:nick "john" ;
     foaf:age 30 ;
     foaf:birthday "1994-03-15"^^xsd:date ;
-    foaf:depiction <https://via.placeholder.com/150x150.png> ;
     foaf:mbox <mailto:john@example.org> ;
-    foaf:phone <tel:+1234567890> ;
-    ex:score 95.5 ;
-    ex:active true .</textarea>
-            <rdf-viewer id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="true" enable-navigation="true"></rdf-viewer>
+    foaf:homepage <https://johndoe.dev> ;
+    foaf:knows ex:person2 .
+
+ex:person2 a foaf:Person ;
+    foaf:name "Jane Smith"@en ;
+    foaf:nick "jane" .</textarea>
+            <rdf-viewer id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-viewer>
         </div>
     </div>
 
