@@ -1,4 +1,5 @@
 import { Parser, Store, DataFactory, Quad } from 'n3';
+import { extractNamespacesFromQuads, shortenUri } from '@rdf-web-components/shared';
 
 const { namedNode } = DataFactory;
 
@@ -241,10 +242,10 @@ export class RDFViewer extends HTMLElement {
   }
 
   private renderSubjectTable(subjectValue: string, quads: Quad[]): string {
-    const displaySubject = this.formatTerm(subjectValue, 'subject');
+    const displaySubject = this.getDisplayLabel(subjectValue);
     
     let html = `<div class="subject-table">
-      <div class="subject-header">${displaySubject}</div>
+      <div class="subject-header">${this.escapeHtml(displaySubject)}</div>
       <table class="properties-table">
         <thead>
           <tr>
@@ -310,161 +311,68 @@ export class RDFViewer extends HTMLElement {
     return html;
   }
 
-  private renderNamespaces(): string {
-    const namespaces = this.extractNamespaces();
-    if (namespaces.size === 0) return '';
-
-    let html = '<div class="namespaces"><h3>Namespaces:</h3><ul>';
-    namespaces.forEach((uri, prefix) => {
-      html += `<li><span class="prefix">${prefix}:</span> <span class="uri">&lt;${uri}&gt;</span></li>`;
-    });
-    html += '</ul></div>';
-    return html;
-  }
-
   private renderSubject(subjectValue: string, quads: Quad[]): string {
-    const displaySubject = this.formatTerm(subjectValue, 'subject');
-    
-    let html = `<div class="subject-block">
-      <div class="subject">${displaySubject}</div>
-      <div class="predicates">`;
-
-    // Group by predicate
+    const displaySubject = this.getDisplayLabel(subjectValue);
     const predicates = new Map<string, Quad[]>();
+
     quads.forEach(quad => {
       const predicateValue = quad.predicate.value;
       if (!predicates.has(predicateValue)) {
         predicates.set(predicateValue, []);
       }
       predicates.get(predicateValue)!.push(quad);
-    });      predicates.forEach((predQuads, predicateValue) => {
-        const displayPredicate = this.getDisplayLabel(predicateValue);
-        html += `<div class="predicate-block">
-          <span class="predicate" title="${this.escapeHtml(predicateValue)}">${this.escapeHtml(displayPredicate)}</span>
-          <div class="objects">`;
-        
-        predQuads.forEach((quad, index) => {
-          const displayObject = this.renderObjectValue(quad.object.value, quad.object.termType, true);
-          html += `<span class="object">${displayObject}</span>`;
-          if (index < predQuads.length - 1) html += ', ';
-        });
-        
-        html += '</div></div>';
+    });
+
+    let html = '<div class="subject-block">';
+    html += `<div class="subject" data-uri="${this.escapeHtml(subjectValue)}">${this.escapeHtml(displaySubject)}</div>`;
+    html += '<div class="predicates">';
+
+    predicates.forEach((predicateQuads, predicateValue) => {
+      const displayPredicate = this.getDisplayLabel(predicateValue);
+      html += '<div class="predicate-block">';
+      html += `<span class="predicate" title="${this.escapeHtml(predicateValue)}">${this.escapeHtml(displayPredicate)}</span>`;
+      html += '<span class="objects">';
+
+      predicateQuads.forEach((quad, index) => {
+        html += this.renderObjectValue(
+          quad.object.value,
+          quad.object.termType,
+          Boolean(this.config.enableNavigation)
+        );
+        if (index < predicateQuads.length - 1) {
+          html += ', ';
+        }
       });
+
+      html += '</span></div>';
+    });
 
     html += '</div></div>';
     return html;
   }
 
-  private formatTerm(value: string, role: 'subject' | 'predicate' | 'object', termType?: string): string {
-    if (termType === 'Literal') {
-      return `<span class="literal">"${this.escapeHtml(value)}"</span>`;
+  private renderNamespaces(): string {
+    const namespaces = this.extractNamespaces();
+    if (namespaces.size === 0) {
+      return '';
     }
 
-    if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:')) {
-      if (this.config.expandURIs) {
-        return `<span class="uri">&lt;${this.escapeHtml(value)}&gt;</span>`;
-      } else {
-        const shortened = this.shortenURI(value);
-        return `<span class="uri" title="${this.escapeHtml(value)}">${this.escapeHtml(shortened)}</span>`;
-      }
-    }
-
-    return `<span class="term">${this.escapeHtml(value)}</span>`;
+    let html = '<div class="namespaces"><h3>Namespaces:</h3><ul>';
+    namespaces.forEach((namespace, prefix) => {
+      html += `<li><strong>${this.escapeHtml(prefix)}</strong>: ${this.escapeHtml(namespace)}</li>`;
+    });
+    html += '</ul></div>';
+    return html;
   }
 
   private shortenURI(uri: string): string {
     const namespaces = this.extractNamespaces();
-    for (const [prefix, namespace] of namespaces) {
-      if (uri.startsWith(namespace)) {
-        return `${prefix}:${uri.substring(namespace.length)}`;
-      }
-    }
-    
-    // Common namespace shortcuts
-    const commonNamespaces = {
-      'http://www.w3.org/1999/02/22-rdf-syntax-ns#': 'rdf',
-      'http://www.w3.org/2000/01/rdf-schema#': 'rdfs',
-      'http://www.w3.org/2002/07/owl#': 'owl',
-      'http://purl.org/dc/elements/1.1/': 'dc',
-      'http://xmlns.com/foaf/0.1/': 'foaf',
-      'http://www.w3.org/2004/02/skos/core#': 'skos'
-    };
-
-    for (const [namespace, prefix] of Object.entries(commonNamespaces)) {
-      if (uri.startsWith(namespace)) {
-        return `${prefix}:${uri.substring(namespace.length)}`;
-      }
-    }
-
-    return uri;
+    return shortenUri(uri, namespaces);
   }
 
   private extractNamespaces(): Map<string, string> {
-    const namespaces = new Map<string, string>();
     const quads = this.store.getQuads(null, null, null, null);
-    
-    quads.forEach((quad: Quad) => {
-      [quad.subject.value, quad.predicate.value, quad.object.value].forEach(value => {
-        if (value.startsWith('http://') || value.startsWith('https://')) {
-          // Ensure the URI is well-formed with a proper domain
-          const uriMatch = value.match(/^https?:\/\/[^\/\s]+/);
-          if (!uriMatch) {
-            return; // Skip malformed URIs
-          }
-          
-          const lastSlash = Math.max(value.lastIndexOf('/'), value.lastIndexOf('#'));
-          if (lastSlash > 0) {
-            const namespace = value.substring(0, lastSlash + 1);
-            
-            // Additional validation: ensure namespace ends with / or #
-            if (!namespace.endsWith('/') && !namespace.endsWith('#')) {
-              return;
-            }
-            
-            const prefix = this.generatePrefix(namespace);
-            if (prefix && !namespaces.has(prefix)) {
-              namespaces.set(prefix, namespace);
-            }
-          }
-        }
-      });
-    });
-
-    return namespaces;
-  }
-
-  private generatePrefix(namespace: string): string | null {
-    const commonPrefixes: { [key: string]: string } = {
-      'http://www.w3.org/1999/02/22-rdf-syntax-ns#': 'rdf',
-      'http://www.w3.org/2000/01/rdf-schema#': 'rdfs',
-      'http://www.w3.org/2002/07/owl#': 'owl',
-      'http://purl.org/dc/elements/1.1/': 'dc',
-      'http://xmlns.com/foaf/0.1/': 'foaf',
-      'http://www.w3.org/2004/02/skos/core#': 'skos'
-    };
-
-    if (commonPrefixes[namespace]) {
-      return commonPrefixes[namespace];
-    }
-
-    // Generate a simple prefix from the domain
-    const match = namespace.match(/https?:\/\/([^\/]+)/);
-    if (match && match[1]) {
-      const domain = match[1].replace(/^www\./, '');
-      const parts = domain.split('.');
-      if (parts[0] && parts[0].length > 0) {
-        // Ensure we have a valid domain part
-        const prefix = parts[0].substring(0, 3).toLowerCase();
-        if (prefix.length > 0) {
-          return prefix;
-        }
-      }
-    }
-
-    // If we can't generate a meaningful prefix, don't create one
-    // This prevents invalid prefixes like 'ns: <https://>'
-    return null;
+    return extractNamespacesFromQuads(quads);
   }
 
   private escapeHtml(text: string): string {

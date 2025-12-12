@@ -1,0 +1,29 @@
+{
+  "name": "@rdf-web-components/react-components",
+  "type": "module",
+  "module": "src/index.ts",
+  "scripts": {
+    "dev": "bun --hot ./dev/server.ts",
+    "build": "bun build ./src/index.ts --outdir dist --external react --external react-dom --external @rdf-web-components/shared",
+    "test": "bun test --preload ./test/setup.ts",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@rdf-web-components/shared": "workspace:shared",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
+  },
+  "devDependencies": {
+    "@storybook/addon-a11y": "10.1.7",
+    "@storybook/react-vite": "10.1.7",
+    "storybook": "10.1.7",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.0.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "happy-dom": "20.0.11",
+    "@storybook/addon-docs": "10.1.7"
+  }
+}

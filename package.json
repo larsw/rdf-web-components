@@ -1,20 +1,19 @@
 {
-  "name": "rdf-web-components",
-  "module": "index.ts",
+  "name": "rdf-web-components-monorepo",
+  "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-  "dev": "bun --hot index.ts",
-  "start": "bun index.ts",
-  "build": "bun build ./index.html --outdir dist"
+    "dev": "bun run --filter @rdf-web-components/web-components dev",
+    "build": "bun run --filter @rdf-web-components/web-components build && bun run --filter @rdf-web-components/react-components build",
+    "test": "bun run --filter @rdf-web-components/shared test && bun run --filter @rdf-web-components/web-components test && bun run --filter @rdf-web-components/react-components test",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "lint": "prettier --check \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-  "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@types/n3": "^1.26.0",
-    "n3": "^1.26.0"
+    "prettier": "3.6.2",
+    "typescript": "5.9.2"
   }
 }

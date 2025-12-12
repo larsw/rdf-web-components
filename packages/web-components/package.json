@@ -1,0 +1,19 @@
+{
+  "name": "@rdf-web-components/web-components",
+  "type": "module",
+  "module": "index.ts",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts",
+    "build": "bun build ./index.html --outdir dist",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@rdf-web-components/shared": "workspace:*",
+    "n3": "1.26.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.2.19",
+    "@types/n3": "1.26.0"
+  }
+}
