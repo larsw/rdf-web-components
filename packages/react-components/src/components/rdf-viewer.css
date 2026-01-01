@@ -45,6 +45,12 @@
   margin-left: 0.25rem;
 }
 
+.rdf-viewer .navigation-indicator {
+  color: var(--ds-color-accent-text-subtle);
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
 .rdf-viewer .resource-image {
   border: 1px solid var(--ds-color-neutral-border-subtle);
 }

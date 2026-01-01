@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Literal, type Quad } from "n3";
 import {
   Alert,
@@ -20,6 +20,36 @@ import {
   type RDFFormat,
 } from "@rdf-web-components/shared";
 
+export type LiteralRenderer = (args: {
+  quad: Quad;
+  literal: Literal;
+  namespaces: NamespaceMap;
+  options: {
+    expandUris: boolean;
+    preferredLanguages: string[];
+    showDatatypes: boolean;
+    showLanguageTags: boolean;
+  };
+}) => ReactNode;
+
+export type PredicateRenderer = (args: {
+  quad: Quad;
+  predicate: string;
+  namespaces: NamespaceMap;
+  options: {
+    expandUris: boolean;
+    preferredLanguages: string[];
+    showDatatypes: boolean;
+    showLanguageTags: boolean;
+    showImagesInline: boolean;
+    enableNavigation: boolean;
+    onNavigate: (subject: string | null) => void;
+    subjects: string[];
+    contentTypeCache: Map<string, ContentTypeHint>;
+  };
+  defaultRender: () => ReactNode;
+}) => ReactNode;
+
 export interface RdfViewerProps {
   data: string;
   format?: RDFFormat;
@@ -34,6 +64,8 @@ export interface RdfViewerProps {
   vocabularies?: string[];
   enableNavigation?: boolean;
   enableContentNegotiation?: boolean;
+  literalRenderers?: Record<string, LiteralRenderer>;
+  predicateRenderers?: Record<string, PredicateRenderer>;
   className?: string;
 }
 
@@ -51,6 +83,8 @@ export function RdfViewer({
   vocabularies,
   enableNavigation = true,
   enableContentNegotiation = false,
+  literalRenderers,
+  predicateRenderers,
   className,
 }: RdfViewerProps) {
   const [error, setError] = useState<Error | null>(null);
@@ -228,6 +262,8 @@ export function RdfViewer({
             subjects,
             contentTypeCache,
             metaMap,
+            literalRenderers,
+            predicateRenderers,
           })}
     </div>
   );
@@ -285,6 +321,10 @@ function renderTableLayout(
     subjects: string[];
     contentTypeCache: Map<string, ContentTypeHint>;
     metaMap: Map<string, string>;
+    showDatatypes: boolean;
+    showLanguageTags: boolean;
+    literalRenderers?: Record<string, LiteralRenderer>;
+    predicateRenderers?: Record<string, PredicateRenderer>;
   },
 ) {
   const visibleSubjects = options.selectedSubject
@@ -345,19 +385,36 @@ function renderObjectValue(
     onNavigate: (subject: string | null) => void;
     subjects: string[];
     contentTypeCache: Map<string, ContentTypeHint>;
+    literalRenderers?: Record<string, LiteralRenderer>;
+    predicateRenderers?: Record<string, PredicateRenderer>;
   },
 ) {
-  const object = quad.object;
+  const defaultRender = () => {
+    const object = quad.object;
 
-  if (object.termType === "Literal") {
-    return renderLiteralValue(object, namespaces, options);
+    if (object.termType === "Literal") {
+      return renderLiteralValue(object, namespaces, options, quad);
+    }
+
+    if (object.termType === "NamedNode") {
+      return renderUriValue(object.value, namespaces, options);
+    }
+
+    return <span className="term">{object.value}</span>;
+  };
+
+  const predicateRenderer = options.predicateRenderers?.[quad.predicate.value];
+  if (predicateRenderer) {
+    return predicateRenderer({
+      quad,
+      predicate: quad.predicate.value,
+      namespaces,
+      options,
+      defaultRender,
+    });
   }
 
-  if (object.termType === "NamedNode") {
-    return renderUriValue(object.value, namespaces, options);
-  }
-
-  return <span className="term">{object.value}</span>;
+  return defaultRender();
 }
 
 function renderTurtleLayout(
@@ -559,8 +616,22 @@ function renderLiteralValue(
     preferredLanguages: string[];
     showDatatypes: boolean;
     showLanguageTags: boolean;
+    literalRenderers?: Record<string, LiteralRenderer>;
   },
+  quad: Quad,
 ) {
+  const datatypeKey =
+    literal.datatype?.value ?? "http://www.w3.org/2001/XMLSchema#string";
+  const customRenderer = options.literalRenderers?.[datatypeKey];
+  if (customRenderer) {
+    return customRenderer({
+      quad,
+      literal,
+      namespaces,
+      options,
+    });
+  }
+
   const lang = literal.language?.toLowerCase();
   const datatype = literal.datatype?.value;
   const preferred = lang && options.preferredLanguages.includes(lang);

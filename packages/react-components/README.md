@@ -51,4 +51,6 @@ This library renders Designsystemet React components. Import the Designsystemet 
 - `vocabularies` (string[]): Vocabulary URLs to resolve human-friendly labels.
 - `enableNavigation` (boolean): Allow navigating between subject nodes.
 - `enableContentNegotiation` (boolean): Detect resource types (images, HTML, RDF).
+- `literalRenderers` (Record<string, LiteralRenderer>): Map datatype IRI to custom literal renderers.
+- `predicateRenderers` (Record<string, PredicateRenderer>): Map predicate IRI to custom object renderers.
 - `className` (string): Wrapper class name.
