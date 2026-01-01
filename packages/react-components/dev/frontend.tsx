@@ -270,7 +270,8 @@ function App() {
 const viewerProps: RdfViewerProps = {
   data: sampleData,
   preferredLanguages: ["en"],
-  vocabularies: ["/vocab"]
+  vocabularies: ["/vocab"],
+  enableNavigation: true
 };
 
 const root = createRoot(document.getElementById("app")!);

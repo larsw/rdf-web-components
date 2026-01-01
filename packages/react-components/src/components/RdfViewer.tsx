@@ -45,7 +45,7 @@ export function RdfViewer({
   theme = "light",
   showImagesInline = true,
   vocabularies,
-  enableNavigation = false,
+  enableNavigation = true,
   enableContentNegotiation = false,
   className
 }: RdfViewerProps) {
