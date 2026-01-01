@@ -685,6 +685,12 @@ function renderUriValue(
     <>
       {displayValue}
       {hint ? <span className="content-type-hint">{hint}</span> : null}
+      {isNavigable ? (
+        <span className="navigation-indicator" aria-hidden="true">
+          {" "}
+          »
+        </span>
+      ) : null}
     </>
   );
 
