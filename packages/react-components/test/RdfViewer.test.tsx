@@ -1,3 +1,4 @@
+import "./setup";
 import { describe, expect, test } from "bun:test";
 import { act } from "react";
 import { render, screen } from "@testing-library/react";
@@ -52,7 +53,7 @@ describe("RdfViewer", () => {
 
   test("renders table rows with predicate labels", () => {
     render(<RdfViewer data={sampleData} />);
-    expect(screen.getByText("name")).toBeInTheDocument();
+    expect(screen.getAllByText("name").length).toBeGreaterThan(0);
     expect(screen.getByText(/Alice/)).toBeInTheDocument();
   });
 

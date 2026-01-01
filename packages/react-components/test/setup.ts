@@ -3,31 +3,44 @@ import "@testing-library/jest-dom";
 
 const windowInstance = new Window();
 
-const documentInstance = windowInstance.document;
+const windowObject = windowInstance.window;
+const documentInstance = windowObject.document;
+let documentElement = documentInstance.documentElement;
 
-if (!documentInstance.body) {
-  const body = documentInstance.createElement("body");
-  documentInstance.appendChild(body);
+if (!documentElement) {
+  documentElement = documentInstance.createElement("html");
+  documentInstance.appendChild(documentElement);
 }
 
 if (!documentInstance.head) {
   const head = documentInstance.createElement("head");
-  documentInstance.documentElement.prepend(head);
+  documentElement.appendChild(head);
+}
+
+if (!documentInstance.body) {
+  const body = documentInstance.createElement("body");
+  documentElement.appendChild(body);
 }
 
 const globals = {
-  window: windowInstance.window,
+  window: windowObject,
   document: documentInstance,
-  navigator: windowInstance.navigator,
-  HTMLElement: windowInstance.HTMLElement,
-  HTMLInputElement: windowInstance.HTMLInputElement,
-  HTMLSelectElement: windowInstance.HTMLSelectElement,
-  HTMLTextAreaElement: windowInstance.HTMLTextAreaElement,
-  customElements: windowInstance.customElements,
-  Node: windowInstance.Node,
+  navigator: windowObject.navigator,
+  HTMLElement: windowObject.HTMLElement,
+  HTMLInputElement: windowObject.HTMLInputElement,
+  HTMLSelectElement: windowObject.HTMLSelectElement,
+  HTMLTextAreaElement: windowObject.HTMLTextAreaElement,
+  customElements: windowObject.customElements,
+  Node: windowObject.Node,
 } as const;
 
-Object.assign(globalThis, globals);
+for (const [key, value] of Object.entries(globals)) {
+  Object.defineProperty(globalThis, key, {
+    value,
+    writable: true,
+    configurable: true,
+  });
+}
 
 if (!globalThis.requestAnimationFrame) {
   globalThis.requestAnimationFrame = (cb) =>
