@@ -9,7 +9,7 @@ import {
   Link,
   List,
   Paragraph,
-  Table
+  Table,
 } from "@digdir/designsystemet-react";
 import "./rdf-viewer.css";
 import {
@@ -17,7 +17,7 @@ import {
   parseRdf,
   shortenUri,
   type NamespaceMap,
-  type RDFFormat
+  type RDFFormat,
 } from "@rdf-web-components/shared";
 
 export interface RdfViewerProps {
@@ -27,6 +27,7 @@ export interface RdfViewerProps {
   showNamespaces?: boolean;
   expandUris?: boolean;
   preferredLanguages?: string[];
+  showDatatypes?: boolean;
   theme?: "light" | "dark";
   showImagesInline?: boolean;
   vocabularies?: string[];
@@ -42,18 +43,19 @@ export function RdfViewer({
   showNamespaces = false,
   expandUris = false,
   preferredLanguages,
+  showDatatypes = false,
   theme,
   showImagesInline = true,
   vocabularies,
   enableNavigation = true,
   enableContentNegotiation = false,
-  className
+  className,
 }: RdfViewerProps) {
   const [error, setError] = useState<Error | null>(null);
   const [vocabularyQuads, setVocabularyQuads] = useState<Quad[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [contentTypeCache, setContentTypeCache] = useState(
-    new Map<string, ContentTypeHint>()
+    new Map<string, ContentTypeHint>(),
   );
   const contentRequests = useRef<Set<string>>(new Set());
 
@@ -70,12 +72,15 @@ export function RdfViewer({
 
   const namespaces = useMemo(() => extractNamespacesFromQuads(quads), [quads]);
   const normalizedPreferred = useMemo(
-    () => preferredLanguages?.map(lang => lang.trim().toLowerCase()).filter(Boolean) ?? [],
-    [preferredLanguages]
+    () =>
+      preferredLanguages
+        ?.map((lang) => lang.trim().toLowerCase())
+        .filter(Boolean) ?? [],
+    [preferredLanguages],
   );
   const normalizedVocabularies = useMemo(
-    () => vocabularies?.map(vocab => vocab.trim()).filter(Boolean) ?? [],
-    [vocabularies]
+    () => vocabularies?.map((vocab) => vocab.trim()).filter(Boolean) ?? [],
+    [vocabularies],
   );
 
   useEffect(() => {
@@ -117,13 +122,16 @@ export function RdfViewer({
   const groupedSubjects = useMemo(() => groupQuadsBySubject(quads), [quads]);
   const labelMap = useMemo(
     () => buildLabelMap([...vocabularyQuads, ...quads], normalizedPreferred),
-    [vocabularyQuads, quads, normalizedPreferred]
+    [vocabularyQuads, quads, normalizedPreferred],
   );
   const metaMap = useMemo(
     () => buildMetaMap([...vocabularyQuads, ...quads], normalizedPreferred),
-    [vocabularyQuads, quads, normalizedPreferred]
+    [vocabularyQuads, quads, normalizedPreferred],
   );
-  const subjects = useMemo(() => Array.from(groupedSubjects.keys()), [groupedSubjects]);
+  const subjects = useMemo(
+    () => Array.from(groupedSubjects.keys()),
+    [groupedSubjects],
+  );
   const selectedSubjectLabel = selectedSubject
     ? formatTerm(selectedSubject, namespaces, expandUris)
     : null;
@@ -139,11 +147,11 @@ export function RdfViewer({
       }
       contentRequests.current.add(uri);
       void negotiateContentType(uri)
-        .then(result => {
+        .then((result) => {
           if (!result) {
             return;
           }
-          setContentTypeCache(prev => {
+          setContentTypeCache((prev) => {
             const next = new Map(prev);
             next.set(uri, result);
             return next;
@@ -208,6 +216,7 @@ export function RdfViewer({
         : renderTableLayout(groupedSubjects, namespaces, {
             expandUris,
             preferredLanguages: normalizedPreferred,
+            showDatatypes,
             showImagesInline,
             labelMap,
             enableNavigation,
@@ -215,7 +224,7 @@ export function RdfViewer({
             onNavigate: setSelectedSubject,
             subjects,
             contentTypeCache,
-            metaMap
+            metaMap,
           })}
     </div>
   );
@@ -240,19 +249,19 @@ function renderNamespaceList(namespaces: NamespaceMap) {
             gap: "0.5rem",
             listStyle: "none",
             padding: 0,
-            margin: "0.75rem 0 0"
+            margin: "0.75rem 0 0",
           }}
         >
-          {Array.from(namespaces.entries() as IterableIterator<[string, string]>).map(
-            ([prefix, namespace]) => (
-              <List.Item key={prefix} className="namespace-item">
-                <strong>{prefix}</strong>
-                <div>
-                  <code>&lt;{namespace}&gt;</code>
-                </div>
-              </List.Item>
-            )
-          )}
+          {Array.from(
+            namespaces.entries() as IterableIterator<[string, string]>,
+          ).map(([prefix, namespace]) => (
+            <List.Item key={prefix} className="namespace-item">
+              <strong>{prefix}</strong>
+              <div>
+                <code>&lt;{namespace}&gt;</code>
+              </div>
+            </List.Item>
+          ))}
         </List.Unordered>
       </CardBlock>
     </Card>
@@ -273,11 +282,11 @@ function renderTableLayout(
     subjects: string[];
     contentTypeCache: Map<string, ContentTypeHint>;
     metaMap: Map<string, string>;
-  }
+  },
 ) {
   const visibleSubjects = options.selectedSubject
     ? Array.from(subjects.entries()).filter(
-        ([subject]) => subject === options.selectedSubject
+        ([subject]) => subject === options.selectedSubject,
       )
     : Array.from(subjects.entries());
 
@@ -289,26 +298,30 @@ function renderTableLayout(
         </Heading>
         <Table border zebra>
           <Table.Body>
-            {Array.from(predicates.entries()).map(([predicate, predicateQuads]) => (
-              <Table.Row key={`${subject}-${predicate}`}>
-                <Table.HeaderCell>
-                  {renderPredicateLabel(
-                    predicate,
-                    namespaces,
-                    options.expandUris,
-                    options.labelMap,
-                    options.metaMap
-                  )}
-                </Table.HeaderCell>
-                <Table.Cell>
-                  {predicateQuads.map((quad, idx) => (
-                    <div key={`${quad.subject.value}-${quad.predicate.value}-${idx}`}>
-                      {renderObjectValue(quad, namespaces, options)}
-                    </div>
-                  ))}
-                </Table.Cell>
-              </Table.Row>
-            ))}
+            {Array.from(predicates.entries()).map(
+              ([predicate, predicateQuads]) => (
+                <Table.Row key={`${subject}-${predicate}`}>
+                  <Table.HeaderCell>
+                    {renderPredicateLabel(
+                      predicate,
+                      namespaces,
+                      options.expandUris,
+                      options.labelMap,
+                      options.metaMap,
+                    )}
+                  </Table.HeaderCell>
+                  <Table.Cell>
+                    {predicateQuads.map((quad, idx) => (
+                      <div
+                        key={`${quad.subject.value}-${quad.predicate.value}-${idx}`}
+                      >
+                        {renderObjectValue(quad, namespaces, options)}
+                      </div>
+                    ))}
+                  </Table.Cell>
+                </Table.Row>
+              ),
+            )}
           </Table.Body>
         </Table>
       </CardBlock>
@@ -322,12 +335,13 @@ function renderObjectValue(
   options: {
     expandUris: boolean;
     preferredLanguages: string[];
+    showDatatypes: boolean;
     showImagesInline: boolean;
     enableNavigation: boolean;
     onNavigate: (subject: string | null) => void;
     subjects: string[];
     contentTypeCache: Map<string, ContentTypeHint>;
-  }
+  },
 ) {
   const object = quad.object;
 
@@ -342,17 +356,24 @@ function renderObjectValue(
   return <span className="term">{object.value}</span>;
 }
 
-function renderTurtleLayout(quads: Quad[], namespaces: NamespaceMap, expandUris: boolean) {
-  const namespaceLines = Array.from(namespaces.entries() as IterableIterator<[string, string]>)
+function renderTurtleLayout(
+  quads: Quad[],
+  namespaces: NamespaceMap,
+  expandUris: boolean,
+) {
+  const namespaceLines = Array.from(
+    namespaces.entries() as IterableIterator<[string, string]>,
+  )
     .map(([prefix, ns]) => `@prefix ${prefix}: <${ns}> .`)
     .join("\n");
 
-  const statements = quads.map(quad => {
+  const statements = quads.map((quad) => {
     const subject = formatTerm(quad.subject.value, namespaces, expandUris);
     const predicate = formatTerm(quad.predicate.value, namespaces, expandUris);
-    const object = quad.object.termType === "Literal"
-      ? formatLiteralForTurtle(quad, namespaces, expandUris)
-      : formatTerm(quad.object.value, namespaces, expandUris);
+    const object =
+      quad.object.termType === "Literal"
+        ? formatLiteralForTurtle(quad, namespaces, expandUris)
+        : formatTerm(quad.object.value, namespaces, expandUris);
     return `${subject} ${predicate} ${object} .`;
   });
 
@@ -375,19 +396,26 @@ function renderTurtleLayout(quads: Quad[], namespaces: NamespaceMap, expandUris:
   );
 }
 
-function formatLiteralForTurtle(quad: Quad, namespaces: NamespaceMap, expandUris: boolean) {
+function formatLiteralForTurtle(
+  quad: Quad,
+  namespaces: NamespaceMap,
+  expandUris: boolean,
+) {
   let lang: string | undefined;
   let datatype: string | undefined;
   let literal: string = "";
   if (quad.object instanceof Literal) {
     lang = quad.object.language;
     datatype = quad.object.datatype?.value;
-    literal = `"${quad.object.value}"`;      
+    literal = `"${quad.object.value}"`;
   }
 
   if (lang) {
     literal += `@${lang}`;
-  } else if (datatype && datatype !== "http://www.w3.org/2001/XMLSchema#string") {
+  } else if (
+    datatype &&
+    datatype !== "http://www.w3.org/2001/XMLSchema#string"
+  ) {
     literal += `^^${formatTerm(datatype, namespaces, expandUris)}`;
   }
 
@@ -397,7 +425,7 @@ function formatLiteralForTurtle(quad: Quad, namespaces: NamespaceMap, expandUris
 function groupQuadsBySubject(quads: Quad[]): Map<string, Map<string, Quad[]>> {
   const subjects = new Map<string, Map<string, Quad[]>>();
 
-  quads.forEach(quad => {
+  quads.forEach((quad) => {
     const subjectKey = quad.subject.value;
     if (!subjects.has(subjectKey)) {
       subjects.set(subjectKey, new Map());
@@ -415,12 +443,19 @@ function groupQuadsBySubject(quads: Quad[]): Map<string, Map<string, Quad[]>> {
   return subjects;
 }
 
-function formatTerm(value: string, namespaces: NamespaceMap, expandUris: boolean) {
+function formatTerm(
+  value: string,
+  namespaces: NamespaceMap,
+  expandUris: boolean,
+) {
   if (value.startsWith("_:")) {
     return value;
   }
 
-  if (expandUris && (value.startsWith("http://") || value.startsWith("https://"))) {
+  if (
+    expandUris &&
+    (value.startsWith("http://") || value.startsWith("https://"))
+  ) {
     return `<${value}>`;
   }
 
@@ -430,7 +465,7 @@ function formatTerm(value: string, namespaces: NamespaceMap, expandUris: boolean
 function NavigationControls({
   selectedSubject,
   selectedLabel,
-  onShowAll
+  onShowAll,
 }: {
   selectedSubject: string | null;
   selectedLabel: string | null;
@@ -447,7 +482,7 @@ function NavigationControls({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "1rem"
+          gap: "1rem",
         }}
       >
         <Paragraph data-size="sm" style={{ margin: 0 }}>
@@ -484,13 +519,16 @@ function collectUriCandidates(quads: Quad[]) {
   return uris;
 }
 
-async function negotiateContentType(uri: string): Promise<ContentTypeHint | null> {
+async function negotiateContentType(
+  uri: string,
+): Promise<ContentTypeHint | null> {
   try {
     const response = await fetch(uri, {
       method: "HEAD",
       headers: {
-        Accept: "image/*, application/rdf+xml, text/turtle, application/n-triples, text/html, */*"
-      }
+        Accept:
+          "image/*, application/rdf+xml, text/turtle, application/n-triples, text/html, */*",
+      },
     });
     const contentType = response.headers.get("content-type") ?? "";
     return {
@@ -502,7 +540,7 @@ async function negotiateContentType(uri: string): Promise<ContentTypeHint | null
         contentType.includes("application/n-quads") ||
         contentType.includes("application/ld+json"),
       isHtml: contentType.includes("text/html"),
-      contentType: contentType || undefined
+      contentType: contentType || undefined,
     };
   } catch {
     return null;
@@ -512,13 +550,19 @@ async function negotiateContentType(uri: string): Promise<ContentTypeHint | null
 function renderLiteralValue(
   literal: Literal,
   namespaces: NamespaceMap,
-  options: { expandUris: boolean; preferredLanguages: string[] }
+  options: {
+    expandUris: boolean;
+    preferredLanguages: string[];
+    showDatatypes: boolean;
+  },
 ) {
   const lang = literal.language?.toLowerCase();
   const datatype = literal.datatype?.value;
   const preferred = lang && options.preferredLanguages.includes(lang);
   const value = literal.value;
   const classification = classifyLiteral(value, datatype);
+  const isPlainString =
+    !datatype || datatype === "http://www.w3.org/2001/XMLSchema#string";
 
   if (classification.kind === "email") {
     return (
@@ -528,12 +572,30 @@ function renderLiteralValue(
     );
   }
 
+  if (isPlainString) {
+    return (
+      <span className={`literal text${preferred ? " preferred" : ""}`.trim()}>
+        <em>{value}</em>
+        {lang ? <span className="lang">@{lang}</span> : null}
+        {options.showDatatypes && datatype ? (
+          <span className="datatype">
+            ^^{formatTerm(datatype, namespaces, options.expandUris)}
+          </span>
+        ) : null}
+      </span>
+    );
+  }
+
   return (
-    <span className={`literal ${classification.kind}${preferred ? " preferred" : ""}`.trim()}>
+    <span
+      className={`literal ${classification.kind}${preferred ? " preferred" : ""}`.trim()}
+    >
       &ldquo;{value}&rdquo;
       {lang ? <span className="lang">@{lang}</span> : null}
-      {!lang && datatype && datatype !== "http://www.w3.org/2001/XMLSchema#string" ? (
-        <span className="datatype">^^{formatTerm(datatype, namespaces, options.expandUris)}</span>
+      {options.showDatatypes && datatype ? (
+        <span className="datatype">
+          ^^{formatTerm(datatype, namespaces, options.expandUris)}
+        </span>
       ) : null}
     </span>
   );
@@ -544,8 +606,10 @@ function classifyLiteral(value: string, datatype?: string) {
   if (datatype === "http://www.w3.org/2001/XMLSchema#boolean") {
     return { kind: "boolean" };
   }
-  if (datatype === "http://www.w3.org/2001/XMLSchema#date" ||
-      datatype === "http://www.w3.org/2001/XMLSchema#dateTime") {
+  if (
+    datatype === "http://www.w3.org/2001/XMLSchema#date" ||
+    datatype === "http://www.w3.org/2001/XMLSchema#dateTime"
+  ) {
     return { kind: "date" };
   }
   if (!Number.isNaN(Number(value)) && value !== "") {
@@ -570,14 +634,15 @@ function renderUriValue(
     onNavigate: (subject: string | null) => void;
     subjects: string[];
     contentTypeCache: Map<string, ContentTypeHint>;
-  }
+  },
 ) {
   const displayValue = formatTerm(uri, namespaces, options.expandUris);
   const contentHint = options.contentTypeCache.get(uri);
   const isImage =
     (contentHint?.isImage ?? false) ||
     (options.showImagesInline && /\.(png|jpe?g|gif|webp|svg)$/i.test(uri));
-  const isNavigable = options.enableNavigation && options.subjects.includes(uri);
+  const isNavigable =
+    options.enableNavigation && options.subjects.includes(uri);
 
   if (uri.startsWith("mailto:")) {
     return (
@@ -598,10 +663,10 @@ function renderUriValue(
   const hint = contentHint?.contentType
     ? ` (${contentHint.contentType})`
     : contentHint?.isRdf
-    ? " (RDF)"
-    : contentHint?.isHtml
-    ? " (HTML)"
-    : null;
+      ? " (RDF)"
+      : contentHint?.isHtml
+        ? " (HTML)"
+        : null;
 
   const label = (
     <>
@@ -639,7 +704,7 @@ function renderUriValue(
             borderRadius: "6px",
             maxWidth: "220px",
             maxHeight: "160px",
-            objectFit: "cover"
+            objectFit: "cover",
           }}
         />
       ) : null}
@@ -654,7 +719,7 @@ const LABEL_PREDICATES = [
   "http://xmlns.com/foaf/0.1/name",
   "http://purl.org/dc/terms/title",
   "http://purl.org/dc/elements/1.1/title",
-  "http://www.w3.org/2004/02/skos/core#altLabel"
+  "http://www.w3.org/2004/02/skos/core#altLabel",
 ];
 
 function buildLabelMap(quads: Quad[], preferredLanguages: string[]) {
@@ -663,18 +728,21 @@ function buildLabelMap(quads: Quad[], preferredLanguages: string[]) {
     Map<string, { value: string; lang?: string }[]>
   >();
 
-  quads.forEach(quad => {
+  quads.forEach((quad) => {
     if (!LABEL_PREDICATES.includes(quad.predicate.value)) {
       return;
     }
-    if (quad.subject.termType !== "NamedNode" || quad.object.termType !== "Literal") {
+    if (
+      quad.subject.termType !== "NamedNode" ||
+      quad.object.termType !== "Literal"
+    ) {
       return;
     }
     const subjectMap = candidates.get(quad.subject.value) ?? new Map();
     const predicateList = subjectMap.get(quad.predicate.value) ?? [];
     predicateList.push({
       value: quad.object.value,
-      lang: quad.object.language?.toLowerCase() || undefined
+      lang: quad.object.language?.toLowerCase() || undefined,
     });
     subjectMap.set(quad.predicate.value, predicateList);
     candidates.set(quad.subject.value, subjectMap);
@@ -700,20 +768,20 @@ function buildLabelMap(quads: Quad[], preferredLanguages: string[]) {
 
 function selectPreferredLabel(
   labels: { value: string; lang?: string }[],
-  preferredLanguages: string[]
+  preferredLanguages: string[],
 ) {
   if (labels.length === 0) {
     return undefined;
   }
 
   for (const lang of preferredLanguages) {
-    const match = labels.find(label => label.lang === lang);
+    const match = labels.find((label) => label.lang === lang);
     if (match) {
       return match.value;
     }
   }
 
-  const noLang = labels.find(label => !label.lang);
+  const noLang = labels.find((label) => !label.lang);
   return noLang?.value ?? labels[0].value;
 }
 
@@ -721,7 +789,7 @@ function formatPredicate(
   value: string,
   namespaces: NamespaceMap,
   expandUris: boolean,
-  labelMap: Map<string, string>
+  labelMap: Map<string, string>,
 ) {
   const label = labelMap.get(value);
   if (label) {
@@ -736,23 +804,26 @@ const META_PREDICATES = [
   "http://www.w3.org/2004/02/skos/core#note",
   "http://www.w3.org/2000/01/rdf-schema#comment",
   "http://purl.org/dc/terms/description",
-  "http://purl.org/dc/elements/1.1/description"
+  "http://purl.org/dc/elements/1.1/description",
 ];
 
 function buildMetaMap(quads: Quad[], preferredLanguages: string[]) {
   const candidates = new Map<string, { value: string; lang?: string }[]>();
 
-  quads.forEach(quad => {
+  quads.forEach((quad) => {
     if (!META_PREDICATES.includes(quad.predicate.value)) {
       return;
     }
-    if (quad.subject.termType !== "NamedNode" || quad.object.termType !== "Literal") {
+    if (
+      quad.subject.termType !== "NamedNode" ||
+      quad.object.termType !== "Literal"
+    ) {
       return;
     }
     const list = candidates.get(quad.subject.value) ?? [];
     list.push({
       value: quad.object.value,
-      lang: quad.object.language?.toLowerCase() || undefined
+      lang: quad.object.language?.toLowerCase() || undefined,
     });
     candidates.set(quad.subject.value, list);
   });
@@ -773,7 +844,7 @@ function renderPredicateLabel(
   namespaces: NamespaceMap,
   expandUris: boolean,
   labelMap: Map<string, string>,
-  metaMap: Map<string, string>
+  metaMap: Map<string, string>,
 ) {
   const display = formatPredicate(value, namespaces, expandUris, labelMap);
   const meta = metaMap.get(value);
