@@ -42,7 +42,7 @@ export function RdfViewer({
   showNamespaces = false,
   expandUris = false,
   preferredLanguages,
-  theme = "light",
+  theme,
   showImagesInline = true,
   vocabularies,
   enableNavigation = true,
@@ -157,7 +157,11 @@ export function RdfViewer({
 
   if (error) {
     return (
-      <div className={`rdf-viewer ${className ?? ""}`.trim()} data-theme={theme}>
+      <div
+        className={`rdf-viewer ${className ?? ""}`.trim()}
+        data-theme={theme}
+        data-color-scheme={theme}
+      >
         <Alert data-color="danger">
           <Heading level={3} data-size="sm">
             Failed to parse RDF data
@@ -170,7 +174,11 @@ export function RdfViewer({
 
   if (quads.length === 0) {
     return (
-      <div className={`rdf-viewer ${className ?? ""}`.trim()} data-theme={theme}>
+      <div
+        className={`rdf-viewer ${className ?? ""}`.trim()}
+        data-theme={theme}
+        data-color-scheme={theme}
+      >
         <Alert>
           <Paragraph data-size="sm">No RDF data to display.</Paragraph>
         </Alert>

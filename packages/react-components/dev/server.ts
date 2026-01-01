@@ -1,10 +1,13 @@
 import index from "./index.html";
 import { findVocabularyByRoute } from "@rdf-web-components/shared";
 
-console.log("Starting React components playground on http://localhost:3100");
+const port = Number(Bun.env.PORT ?? "3100");
+const baseUrl = `http://localhost:${port}`;
+
+console.log(`Starting React components playground on ${baseUrl}`);
 
 Bun.serve({
-  port: 3100,
+  port,
   routes: {
     "/": index
   },
@@ -39,4 +42,4 @@ function buildCorsHeaders(contentType: string) {
 }
 
 // open browser
-Bun.spawn(["open", "http://localhost:3100"]);
+Bun.spawn(["open", baseUrl]);

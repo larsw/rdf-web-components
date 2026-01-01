@@ -260,7 +260,7 @@ function App() {
       </div>
       <Card style={{ marginTop: "1.5rem" }}>
         <CardBlock>
-          <RdfViewer {...viewerProps} />
+          <RdfViewer {...viewerProps} theme={colorScheme} />
         </CardBlock>
       </Card>
     </div>
