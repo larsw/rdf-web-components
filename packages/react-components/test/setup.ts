@@ -24,15 +24,16 @@ const globals = {
   HTMLSelectElement: windowInstance.HTMLSelectElement,
   HTMLTextAreaElement: windowInstance.HTMLTextAreaElement,
   customElements: windowInstance.customElements,
-  Node: windowInstance.Node
+  Node: windowInstance.Node,
 } as const;
 
 Object.assign(globalThis, globals);
 
 if (!globalThis.requestAnimationFrame) {
-  globalThis.requestAnimationFrame = cb => setTimeout(() => cb(Date.now()), 0);
+  globalThis.requestAnimationFrame = (cb) =>
+    setTimeout(() => cb(Date.now()), 0);
 }
 
 if (!globalThis.cancelAnimationFrame) {
-  globalThis.cancelAnimationFrame = id => clearTimeout(id);
+  globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
 }

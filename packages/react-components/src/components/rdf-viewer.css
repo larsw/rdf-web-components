@@ -2,6 +2,10 @@
   color: var(--ds-color-neutral-text-default);
 }
 
+.rdf-viewer .literal-value {
+  font-variant-numeric: tabular-nums;
+}
+
 .rdf-viewer .literal.numeric {
   color: var(--ds-color-info-text-default);
 }
@@ -16,6 +20,19 @@
 
 .rdf-viewer .literal.email {
   color: var(--ds-color-accent-text-default);
+}
+
+.rdf-viewer .lang-tag {
+  background: var(--ds-color-neutral-surface-tinted);
+  border: 1px solid var(--ds-color-neutral-border-subtle);
+  border-radius: 999px;
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  text-transform: uppercase;
 }
 
 .rdf-viewer .uri-link {

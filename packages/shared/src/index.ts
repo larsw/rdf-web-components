@@ -1,6 +1,8 @@
 import { Parser, Quad } from "n3";
 
-const globalScope = globalThis as typeof globalThis & { global?: typeof globalThis };
+const globalScope = globalThis as typeof globalThis & {
+  global?: typeof globalThis;
+};
 if (!globalScope.global) {
   globalScope.global = globalScope;
 }
@@ -8,7 +10,7 @@ export {
   findVocabularyByKey,
   findVocabularyByRoute,
   localVocabularies,
-  type VocabularyDescriptor
+  type VocabularyDescriptor,
 } from "./vocab";
 
 export type RDFFormat = "turtle" | "n-triples" | "n-quads" | "trig" | "json-ld";
@@ -22,47 +24,55 @@ const COMMON_PREFIXES: Record<string, string> = {
   "http://xmlns.com/foaf/0.1/": "foaf",
   "http://www.w3.org/2004/02/skos/core#": "skos",
   "http://schema.org/": "schema",
-  "http://www.w3.org/2001/XMLSchema#": "xsd",  
+  "http://www.w3.org/2001/XMLSchema#": "xsd",
 };
 
-export const parseRdf = (data: string, format: RDFFormat = "turtle"): Quad[] => {
+export const parseRdf = (
+  data: string,
+  format: RDFFormat = "turtle",
+): Quad[] => {
   const parser = new Parser({ format });
   return parser.parse(data);
-}
+};
 
 export const extractNamespacesFromQuads = (quads: Quad[]): NamespaceMap => {
   const namespaces: NamespaceMap = new Map();
 
   quads.forEach((quad: Quad) => {
-    [quad.subject.value, quad.predicate.value, quad.object.value].forEach(value => {
-      if (!value.startsWith("http://") && !value.startsWith("https://")) {
-        return;
-      }
+    [quad.subject.value, quad.predicate.value, quad.object.value].forEach(
+      (value) => {
+        if (!value.startsWith("http://") && !value.startsWith("https://")) {
+          return;
+        }
 
-      const uriMatch = value.match(/^https?:\/\/[^\/\s]+/);
-      if (!uriMatch) {
-        return;
-      }
+        const uriMatch = value.match(/^https?:\/\/[^\/\s]+/);
+        if (!uriMatch) {
+          return;
+        }
 
-      const lastSlash = Math.max(value.lastIndexOf("/"), value.lastIndexOf("#"));
-      if (lastSlash <= 0) {
-        return;
-      }
+        const lastSlash = Math.max(
+          value.lastIndexOf("/"),
+          value.lastIndexOf("#"),
+        );
+        if (lastSlash <= 0) {
+          return;
+        }
 
-      const namespace = value.substring(0, lastSlash + 1);
-      if (!namespace.endsWith("/") && !namespace.endsWith("#")) {
-        return;
-      }
+        const namespace = value.substring(0, lastSlash + 1);
+        if (!namespace.endsWith("/") && !namespace.endsWith("#")) {
+          return;
+        }
 
-      const prefix = generatePrefix(namespace);
-      if (prefix && !namespaces.has(prefix)) {
-        namespaces.set(prefix, namespace);
-      }
-    });
+        const prefix = generatePrefix(namespace);
+        if (prefix && !namespaces.has(prefix)) {
+          namespaces.set(prefix, namespace);
+        }
+      },
+    );
   });
 
   return namespaces;
-}
+};
 
 export const generatePrefix = (namespace: string): string | null => {
   if (COMMON_PREFIXES[namespace]) {
@@ -82,9 +92,9 @@ export const generatePrefix = (namespace: string): string | null => {
   }
 
   return null;
-}
+};
 
-export const shortenUri =(uri: string, namespaces: NamespaceMap): string => {
+export const shortenUri = (uri: string, namespaces: NamespaceMap): string => {
   for (const [prefix, namespace] of namespaces) {
     if (uri.startsWith(namespace)) {
       return `${prefix}:${uri.substring(namespace.length)}`;
@@ -98,4 +108,4 @@ export const shortenUri =(uri: string, namespaces: NamespaceMap): string => {
   }
 
   return uri;
-}
+};

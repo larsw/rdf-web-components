@@ -87,6 +87,39 @@
         .rdf-viewer {
             margin-top: 1rem;
         }
+
+        .test-section[data-theme="dark"] {
+            background: #1a1a1a;
+            color: #d4d4d4;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .test-section[data-theme="dark"] h2 {
+            color: #c2c2c2;
+            border-bottom-color: #333;
+        }
+
+        .test-section[data-theme="dark"] .controls select,
+        .test-section[data-theme="dark"] .controls button,
+        .test-section[data-theme="dark"] .controls input {
+            background: #2a2a2a;
+            border-color: #444;
+            color: #e5e5e5;
+        }
+
+        .test-section[data-theme="dark"] .controls button {
+            background: #2d6bb5;
+        }
+
+        .test-section[data-theme="dark"] .controls button:hover {
+            background: #23528a;
+        }
+
+        .test-section[data-theme="dark"] .data-input {
+            background: #1f1f1f;
+            border-color: #444;
+            color: #e5e5e5;
+        }
     </style>
 </head>
 <body>
@@ -98,7 +131,7 @@
     <div class="container">
         <h1>RDF Viewer Web Component Test</h1>
         
-        <div class="test-section">
+        <div class="test-section" id="section-1" data-theme="light">
             <h2>Example 1: FOAF Person Data</h2>
             <p><strong>Vocabularies:</strong> This example uses locally served vocabularies to demonstrate enhanced labels:
             <br>• <code>FOAF</code> - Friend of a Friend vocabulary
@@ -164,7 +197,7 @@
                         vocabularies="http://localhost:3002/vocab,http://localhost:3002/vocab/foaf,http://localhost:3002/vocab/rdfs" />
         </div>
         
-        <div class="test-section">
+        <div class="test-section" id="section-2" data-theme="light">
             <h2>Example 2: Dublin Core Metadata</h2>
             <p><strong>Vocabularies:</strong> This example demonstrates Dublin Core metadata with enhanced labels from:
             <br>• <code>DC Elements</code> - Dublin Core Elements vocabulary
@@ -216,7 +249,7 @@
             <rdf-viewer id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-viewer>
         </div>
         
-        <div class="test-section">
+        <div class="test-section" id="section-3" data-theme="light">
             <h2>Custom RDF Data</h2>
             <div class="controls">
                 <label>

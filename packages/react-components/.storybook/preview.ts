@@ -10,9 +10,9 @@ const preview: Preview = {
       defaultValue: "light",
       toolbar: {
         icon: "circlehollow",
-        items: ["light", "dark"]
-      }
-    }
+        items: ["light", "dark"],
+      },
+    },
   },
   decorators: [
     (Story, context) => {
@@ -22,12 +22,12 @@ const preview: Preview = {
         document.body?.setAttribute("data-color-scheme", scheme);
       }
       return Story();
-    }
+    },
   ],
   parameters: {
     layout: "centered",
-    controls: { expanded: true }
-  }
+    controls: { expanded: true },
+  },
 };
 
 export default preview;

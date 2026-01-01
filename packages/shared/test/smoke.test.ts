@@ -4,7 +4,7 @@ import { findVocabularyByKey, parseRdf } from "../src";
 test("parseRdf parses turtle input", () => {
   const quads = parseRdf(
     '@prefix ex: <http://example.org/> . ex:alice ex:name "Alice" .',
-    "turtle"
+    "turtle",
   );
 
   expect(quads.length).toBe(1);

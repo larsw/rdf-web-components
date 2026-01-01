@@ -9,14 +9,14 @@ console.log(`Starting React components playground on ${baseUrl}`);
 Bun.serve({
   port,
   routes: {
-    "/": index
+    "/": index,
   },
   fetch(req) {
     const url = new URL(req.url);
     const vocabDescriptor = findVocabularyByRoute(url.pathname);
     if (vocabDescriptor) {
       return new Response(Bun.file(vocabDescriptor.filePath), {
-        headers: buildCorsHeaders(vocabDescriptor.contentType)
+        headers: buildCorsHeaders(vocabDescriptor.contentType),
       });
     }
 
@@ -28,8 +28,8 @@ Bun.serve({
   },
   development: {
     hmr: true,
-    console: true
-  }
+    console: true,
+  },
 });
 
 function buildCorsHeaders(contentType: string) {
@@ -37,7 +37,7 @@ function buildCorsHeaders(contentType: string) {
     "Content-Type": contentType,
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type",
   };
 }
 

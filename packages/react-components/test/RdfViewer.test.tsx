@@ -70,10 +70,15 @@ describe("RdfViewer", () => {
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 foaf:mbox rdfs:label "email"@en .
-        `.trim()
+        `.trim(),
       );
 
-    render(<RdfViewer data={sampleData} vocabularies={["http://example.org/foaf.ttl"]} />);
+    render(
+      <RdfViewer
+        data={sampleData}
+        vocabularies={["http://example.org/foaf.ttl"]}
+      />,
+    );
     expect(await screen.findByText("email")).toBeInTheDocument();
 
     globalThis.fetch = originalFetch;
@@ -81,7 +86,9 @@ foaf:mbox rdfs:label "email"@en .
 
   test("navigates to a referenced subject", () => {
     render(<RdfViewer data={navigationData} enableNavigation />);
-    const navigateButton = screen.getByRole("button", { name: /Navigate to exa:bob/i });
+    const navigateButton = screen.getByRole("button", {
+      name: /Navigate to exa:bob/i,
+    });
     fireEvent.click(navigateButton);
     expect(screen.getByText(/Viewing:/)).toBeInTheDocument();
     expect(screen.getAllByText(/exa:bob/i).length).toBeGreaterThan(0);

@@ -9,20 +9,29 @@ const packageDir = dirname(fileURLToPath(import.meta.url));
 const localModules = resolve(packageDir, "..", "node_modules");
 
 const config: StorybookConfig = {
-  stories: ["../src/**/*.mdx", "../src/**/*.stories.@(ts|tsx|mdx)", "../src/**/*.stories.@(js|jsx)"],
-  addons: [getAbsolutePath("@storybook/addon-a11y"), getAbsolutePath("@storybook/addon-docs")],
+  stories: [
+    "../src/**/*.mdx",
+    "../src/**/*.stories.@(ts|tsx|mdx)",
+    "../src/**/*.stories.@(js|jsx)",
+  ],
+  addons: [
+    getAbsolutePath("@storybook/addon-a11y"),
+    getAbsolutePath("@storybook/addon-docs"),
+  ],
 
   framework: {
     name: getAbsolutePath("@storybook/react-vite"),
-    options: {}
+    options: {},
   },
   viteFinal: (config) => {
     config.resolve = config.resolve ?? {};
-    const alias = Array.isArray(config.resolve.alias) ? config.resolve.alias : [];
+    const alias = Array.isArray(config.resolve.alias)
+      ? config.resolve.alias
+      : [];
     alias.push(
       {
         find: "@digdir/designsystemet-css",
-        replacement: resolve(localModules, "@digdir", "designsystemet-css")
+        replacement: resolve(localModules, "@digdir", "designsystemet-css"),
       },
       {
         find: "@digdir/designsystemet-css/theme",
@@ -32,13 +41,13 @@ const config: StorybookConfig = {
           "designsystemet-css",
           "dist",
           "theme",
-          "designsystemet.css"
-        )
-      }
+          "designsystemet.css",
+        ),
+      },
     );
     config.resolve.alias = alias;
     return config;
-  }
+  },
 };
 
 export default config;

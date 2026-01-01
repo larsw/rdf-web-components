@@ -264,193 +264,273 @@ ex:document3 dc:title "Linked Data Patterns"@en ;
 
 // Function to set up event listeners for controls
 function setupControls() {
-    // Viewer 1 controls
-    const showNamespaces1 = document.getElementById('show-namespaces-1') as HTMLInputElement;
-    const expandUris1 = document.getElementById('expand-uris-1') as HTMLInputElement;
-    const showImagesInline1 = document.getElementById('show-images-inline-1') as HTMLInputElement;
-    const theme1 = document.getElementById('theme-1') as HTMLSelectElement;
-    const viewer1 = document.getElementById('viewer1') as any;
+  // Viewer 1 controls
+  const showNamespaces1 = document.getElementById(
+    "show-namespaces-1",
+  ) as HTMLInputElement;
+  const expandUris1 = document.getElementById(
+    "expand-uris-1",
+  ) as HTMLInputElement;
+  const showImagesInline1 = document.getElementById(
+    "show-images-inline-1",
+  ) as HTMLInputElement;
+  const theme1 = document.getElementById("theme-1") as HTMLSelectElement;
+  const viewer1 = document.getElementById("viewer1") as any;
 
-    showNamespaces1.addEventListener('change', () => {
-        viewer1.setAttribute('show-namespaces', showNamespaces1.checked.toString());
-    });
+  showNamespaces1.addEventListener("change", () => {
+    viewer1.setAttribute("show-namespaces", showNamespaces1.checked.toString());
+  });
 
-    expandUris1.addEventListener('change', () => {
-        viewer1.setAttribute('expand-uris', expandUris1.checked.toString());
-    });
+  expandUris1.addEventListener("change", () => {
+    viewer1.setAttribute("expand-uris", expandUris1.checked.toString());
+  });
 
-    theme1.addEventListener('change', () => {
-        viewer1.setAttribute('theme', theme1.value);
-    });
+  theme1.addEventListener("change", () => {
+    viewer1.setAttribute("theme", theme1.value);
+  });
 
-    showImagesInline1.addEventListener('change', () => {
-        viewer1.setAttribute('show-images-inline', showImagesInline1.checked.toString());
-    });
+  showImagesInline1.addEventListener("change", () => {
+    viewer1.setAttribute(
+      "show-images-inline",
+      showImagesInline1.checked.toString(),
+    );
+  });
 
-    // Viewer 2 controls
-    const showNamespaces2 = document.getElementById('show-namespaces-2') as HTMLInputElement;
-    const expandUris2 = document.getElementById('expand-uris-2') as HTMLInputElement;
-    const showImagesInline2 = document.getElementById('show-images-inline-2') as HTMLInputElement;
-    const theme2 = document.getElementById('theme-2') as HTMLSelectElement;
-    const viewer2 = document.getElementById('viewer2') as any;
+  // Viewer 2 controls
+  const showNamespaces2 = document.getElementById(
+    "show-namespaces-2",
+  ) as HTMLInputElement;
+  const expandUris2 = document.getElementById(
+    "expand-uris-2",
+  ) as HTMLInputElement;
+  const showImagesInline2 = document.getElementById(
+    "show-images-inline-2",
+  ) as HTMLInputElement;
+  const theme2 = document.getElementById("theme-2") as HTMLSelectElement;
+  const viewer2 = document.getElementById("viewer2") as any;
 
-    showNamespaces2.addEventListener('change', () => {
-        viewer2.setAttribute('show-namespaces', showNamespaces2.checked.toString());
-    });
+  showNamespaces2.addEventListener("change", () => {
+    viewer2.setAttribute("show-namespaces", showNamespaces2.checked.toString());
+  });
 
-    expandUris2.addEventListener('change', () => {
-        viewer2.setAttribute('expand-uris', expandUris2.checked.toString());
-    });
+  expandUris2.addEventListener("change", () => {
+    viewer2.setAttribute("expand-uris", expandUris2.checked.toString());
+  });
 
-    theme2.addEventListener('change', () => {
-        viewer2.setAttribute('theme', theme2.value);
-    });
+  theme2.addEventListener("change", () => {
+    viewer2.setAttribute("theme", theme2.value);
+  });
 
-    showImagesInline2.addEventListener('change', () => {
-        viewer2.setAttribute('show-images-inline', showImagesInline2.checked.toString());
-    });
+  showImagesInline2.addEventListener("change", () => {
+    viewer2.setAttribute(
+      "show-images-inline",
+      showImagesInline2.checked.toString(),
+    );
+  });
 
-    // Viewer 3 controls
-    const showNamespaces3 = document.getElementById('show-namespaces-3') as HTMLInputElement;
-    const expandUris3 = document.getElementById('expand-uris-3') as HTMLInputElement;
-    const showImagesInline3 = document.getElementById('show-images-inline-3') as HTMLInputElement;
-    const theme3 = document.getElementById('theme-3') as HTMLSelectElement;
-    const format3 = document.getElementById('format-3') as HTMLSelectElement;
-    const viewer3 = document.getElementById('viewer3') as any;
+  // Viewer 3 controls
+  const showNamespaces3 = document.getElementById(
+    "show-namespaces-3",
+  ) as HTMLInputElement;
+  const expandUris3 = document.getElementById(
+    "expand-uris-3",
+  ) as HTMLInputElement;
+  const showImagesInline3 = document.getElementById(
+    "show-images-inline-3",
+  ) as HTMLInputElement;
+  const theme3 = document.getElementById("theme-3") as HTMLSelectElement;
+  const format3 = document.getElementById("format-3") as HTMLSelectElement;
+  const viewer3 = document.getElementById("viewer3") as any;
 
-    showNamespaces3.addEventListener('change', () => {
-        viewer3.setAttribute('show-namespaces', showNamespaces3.checked.toString());
-    });
+  showNamespaces3.addEventListener("change", () => {
+    viewer3.setAttribute("show-namespaces", showNamespaces3.checked.toString());
+  });
 
-    expandUris3.addEventListener('change', () => {
-        viewer3.setAttribute('expand-uris', expandUris3.checked.toString());
-    });
+  expandUris3.addEventListener("change", () => {
+    viewer3.setAttribute("expand-uris", expandUris3.checked.toString());
+  });
 
-    theme3.addEventListener('change', () => {
-        viewer3.setAttribute('theme', theme3.value);
-    });
+  theme3.addEventListener("change", () => {
+    viewer3.setAttribute("theme", theme3.value);
+  });
 
-    format3.addEventListener('change', () => {
-        viewer3.setAttribute('format', format3.value);
-    });
+  format3.addEventListener("change", () => {
+    viewer3.setAttribute("format", format3.value);
+  });
 
-    showImagesInline3.addEventListener('change', () => {
-        viewer3.setAttribute('show-images-inline', showImagesInline3.checked.toString());
-    });
+  showImagesInline3.addEventListener("change", () => {
+    viewer3.setAttribute(
+      "show-images-inline",
+      showImagesInline3.checked.toString(),
+    );
+  });
 }
 
 // Function to update viewers
-(window as any).updateViewer1 = function() {
-    const layout1 = (document.getElementById('layout-1') as HTMLSelectElement).value;
-    const showNamespaces1 = (document.getElementById('show-namespaces-1') as HTMLInputElement).checked;
-    const expandUris1 = (document.getElementById('expand-uris-1') as HTMLInputElement).checked;
-    const showImagesInline1 = (document.getElementById('show-images-inline-1') as HTMLInputElement).checked;
-    const enableNavigation1 = (document.getElementById('enable-navigation-1') as HTMLInputElement).checked;
-    const theme1 = (document.getElementById('theme-1') as HTMLSelectElement).value;
-    const languages1 = (document.getElementById('languages-1') as HTMLInputElement).value;
-    const vocabularies1 = (document.getElementById('vocabularies-1') as HTMLSelectElement)?.value || '';
-    const viewer1 = document.getElementById('viewer1') as any;
-    
-    viewer1.setAttribute('layout', layout1);
-    viewer1.setAttribute('show-namespaces', showNamespaces1.toString());
-    viewer1.setAttribute('expand-uris', expandUris1.toString());
-    viewer1.setAttribute('show-images-inline', showImagesInline1.toString());
-    viewer1.setAttribute('enable-navigation', enableNavigation1.toString());
-    viewer1.setAttribute('theme', theme1);
-    viewer1.setAttribute('preferred-languages', languages1);
-    if (vocabularies1) {
-        viewer1.setAttribute('vocabularies', vocabularies1);
-    }
+(window as any).updateViewer1 = function () {
+  const layout1 = (document.getElementById("layout-1") as HTMLSelectElement)
+    .value;
+  const showNamespaces1 = (
+    document.getElementById("show-namespaces-1") as HTMLInputElement
+  ).checked;
+  const expandUris1 = (
+    document.getElementById("expand-uris-1") as HTMLInputElement
+  ).checked;
+  const showImagesInline1 = (
+    document.getElementById("show-images-inline-1") as HTMLInputElement
+  ).checked;
+  const enableNavigation1 = (
+    document.getElementById("enable-navigation-1") as HTMLInputElement
+  ).checked;
+  const theme1 = (document.getElementById("theme-1") as HTMLSelectElement)
+    .value;
+  const languages1 = (
+    document.getElementById("languages-1") as HTMLInputElement
+  ).value;
+  const vocabularies1 =
+    (document.getElementById("vocabularies-1") as HTMLSelectElement)?.value ||
+    "";
+  const viewer1 = document.getElementById("viewer1") as any;
+  const section1 = document.getElementById("section-1") as HTMLElement | null;
+
+  viewer1.setAttribute("layout", layout1);
+  viewer1.setAttribute("show-namespaces", showNamespaces1.toString());
+  viewer1.setAttribute("expand-uris", expandUris1.toString());
+  viewer1.setAttribute("show-images-inline", showImagesInline1.toString());
+  viewer1.setAttribute("enable-navigation", enableNavigation1.toString());
+  viewer1.setAttribute("theme", theme1);
+  viewer1.setAttribute("preferred-languages", languages1);
+  if (section1) {
+    section1.dataset.theme = theme1;
+  }
+  if (vocabularies1) {
+    viewer1.setAttribute("vocabularies", vocabularies1);
+  }
 };
 
-(window as any).updateViewer2 = function() {
-    const layout2 = (document.getElementById('layout-2') as HTMLSelectElement).value;
-    const showNamespaces2 = (document.getElementById('show-namespaces-2') as HTMLInputElement).checked;
-    const expandUris2 = (document.getElementById('expand-uris-2') as HTMLInputElement).checked;
-    const showImagesInline2 = (document.getElementById('show-images-inline-2') as HTMLInputElement).checked;
-    const enableNavigation2 = (document.getElementById('enable-navigation-2') as HTMLInputElement).checked;
-    const theme2 = (document.getElementById('theme-2') as HTMLSelectElement).value;
-    const vocabularies2 = (document.getElementById('vocabularies-2') as HTMLSelectElement)?.value || '';
-    const viewer2 = document.getElementById('viewer2') as any;
-    
-    viewer2.setAttribute('layout', layout2);
-    viewer2.setAttribute('show-namespaces', showNamespaces2.toString());
-    viewer2.setAttribute('expand-uris', expandUris2.toString());
-    viewer2.setAttribute('show-images-inline', showImagesInline2.toString());
-    viewer2.setAttribute('enable-navigation', enableNavigation2.toString());
-    viewer2.setAttribute('theme', theme2);
-    if (vocabularies2) {
-        viewer2.setAttribute('vocabularies', vocabularies2);
-    }
+(window as any).updateViewer2 = function () {
+  const layout2 = (document.getElementById("layout-2") as HTMLSelectElement)
+    .value;
+  const showNamespaces2 = (
+    document.getElementById("show-namespaces-2") as HTMLInputElement
+  ).checked;
+  const expandUris2 = (
+    document.getElementById("expand-uris-2") as HTMLInputElement
+  ).checked;
+  const showImagesInline2 = (
+    document.getElementById("show-images-inline-2") as HTMLInputElement
+  ).checked;
+  const enableNavigation2 = (
+    document.getElementById("enable-navigation-2") as HTMLInputElement
+  ).checked;
+  const theme2 = (document.getElementById("theme-2") as HTMLSelectElement)
+    .value;
+  const vocabularies2 =
+    (document.getElementById("vocabularies-2") as HTMLSelectElement)?.value ||
+    "";
+  const viewer2 = document.getElementById("viewer2") as any;
+  const section2 = document.getElementById("section-2") as HTMLElement | null;
+
+  viewer2.setAttribute("layout", layout2);
+  viewer2.setAttribute("show-namespaces", showNamespaces2.toString());
+  viewer2.setAttribute("expand-uris", expandUris2.toString());
+  viewer2.setAttribute("show-images-inline", showImagesInline2.toString());
+  viewer2.setAttribute("enable-navigation", enableNavigation2.toString());
+  viewer2.setAttribute("theme", theme2);
+  if (section2) {
+    section2.dataset.theme = theme2;
+  }
+  if (vocabularies2) {
+    viewer2.setAttribute("vocabularies", vocabularies2);
+  }
 };
 
 // Function to update the custom viewer with user input
-(window as any).updateCustomViewer = function() {
-    const customData = (document.getElementById('custom-data') as HTMLTextAreaElement).value;
-    const format3 = (document.getElementById('format-3') as HTMLSelectElement).value;
-    const layout3 = (document.getElementById('layout-3') as HTMLSelectElement).value;
-    const showNamespaces3 = (document.getElementById('show-namespaces-3') as HTMLInputElement).checked;
-    const expandUris3 = (document.getElementById('expand-uris-3') as HTMLInputElement).checked;
-    const showImagesInline3 = (document.getElementById('show-images-inline-3') as HTMLInputElement).checked;
-    const theme3 = (document.getElementById('theme-3') as HTMLSelectElement).value;
-    const viewer3 = document.getElementById('viewer3') as any;
-    
-    viewer3.setAttribute('data', customData);
-    viewer3.setAttribute('format', format3);
-    viewer3.setAttribute('layout', layout3);
-    viewer3.setAttribute('show-namespaces', showNamespaces3.toString());
-    viewer3.setAttribute('expand-uris', expandUris3.toString());
-    viewer3.setAttribute('show-images-inline', showImagesInline3.toString());
-    viewer3.setAttribute('theme', theme3);
+(window as any).updateCustomViewer = function () {
+  const customData = (
+    document.getElementById("custom-data") as HTMLTextAreaElement
+  ).value;
+  const format3 = (document.getElementById("format-3") as HTMLSelectElement)
+    .value;
+  const layout3 = (document.getElementById("layout-3") as HTMLSelectElement)
+    .value;
+  const showNamespaces3 = (
+    document.getElementById("show-namespaces-3") as HTMLInputElement
+  ).checked;
+  const expandUris3 = (
+    document.getElementById("expand-uris-3") as HTMLInputElement
+  ).checked;
+  const showImagesInline3 = (
+    document.getElementById("show-images-inline-3") as HTMLInputElement
+  ).checked;
+  const theme3 = (document.getElementById("theme-3") as HTMLSelectElement)
+    .value;
+  const viewer3 = document.getElementById("viewer3") as any;
+  const section3 = document.getElementById("section-3") as HTMLElement | null;
+
+  viewer3.setAttribute("data", customData);
+  viewer3.setAttribute("format", format3);
+  viewer3.setAttribute("layout", layout3);
+  viewer3.setAttribute("show-namespaces", showNamespaces3.toString());
+  viewer3.setAttribute("expand-uris", expandUris3.toString());
+  viewer3.setAttribute("show-images-inline", showImagesInline3.toString());
+  viewer3.setAttribute("theme", theme3);
+  if (section3) {
+    section3.dataset.theme = theme3;
+  }
 };
 
 // Initialize the page when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
-    await import('./rdf-viewer.ts');
-    // Set up the sample data for viewers
-    const viewer1 = document.getElementById('viewer1') as any;
-    const viewer2 = document.getElementById('viewer2') as any;
-    const viewer3 = document.getElementById('viewer3') as any;
+document.addEventListener("DOMContentLoaded", async () => {
+  await import("./rdf-viewer.ts");
+  // Set up the sample data for viewers
+  const viewer1 = document.getElementById("viewer1") as any;
+  const viewer2 = document.getElementById("viewer2") as any;
+  const viewer3 = document.getElementById("viewer3") as any;
 
-    // Load sample data
-    viewer1.setAttribute('data', foafPersonData);
-    viewer2.setAttribute('data', dublinCoreData);
-    
-    // Load small test data by default into viewer3 (lighter initial load)
-    viewer3.setAttribute('data', smallTestData);
-    
-    // Update the textarea with comprehensive test data
-    const customDataTextarea = document.getElementById('custom-data') as HTMLTextAreaElement;
-    if (customDataTextarea) {
-        customDataTextarea.value = smallTestData;
-    }
+  // Load sample data
+  viewer1.setAttribute("data", foafPersonData);
+  viewer2.setAttribute("data", dublinCoreData);
 
-    // Set up event listeners
-    setupControls();
+  // Load small test data by default into viewer3 (lighter initial load)
+  viewer3.setAttribute("data", smallTestData);
 
-    console.log('RDF Viewer test page initialized (small test data by default)');
+  // Update the textarea with comprehensive test data
+  const customDataTextarea = document.getElementById(
+    "custom-data",
+  ) as HTMLTextAreaElement;
+  if (customDataTextarea) {
+    customDataTextarea.value = smallTestData;
+  }
+
+  // Set up event listeners
+  setupControls();
+
+  console.log("RDF Viewer test page initialized (small test data by default)");
 });
 
 // Export for debugging
 (window as any).sampleData = {
-    foafPersonData,
-    dublinCoreData,
-    comprehensiveTestData,
-    smallTestData
+  foafPersonData,
+  dublinCoreData,
+  comprehensiveTestData,
+  smallTestData,
 };
 
 // Function to load comprehensive test data into a viewer
-(window as any).loadComprehensiveTest = function(viewerId: string = 'viewer3') {
-    const viewer = document.getElementById(viewerId) as any;
-    if (viewer) {
-        viewer.setAttribute('data', comprehensiveTestData);
-        console.log('Comprehensive test data loaded into', viewerId);
-    }
+(window as any).loadComprehensiveTest = function (
+  viewerId: string = "viewer3",
+) {
+  const viewer = document.getElementById(viewerId) as any;
+  if (viewer) {
+    viewer.setAttribute("data", comprehensiveTestData);
+    console.log("Comprehensive test data loaded into", viewerId);
+  }
 };
 
 // Function to test edge cases that might cause prefix issues
-(window as any).testEdgeCases = function() {
-    const edgeCaseData = `
+(window as any).testEdgeCases = function () {
+  const edgeCaseData = `
 @prefix ex: <http://example.org/> .
 
 # These URIs should NOT generate invalid prefixes
@@ -466,10 +546,10 @@ ex:test7 ex:withFragment <https://example.org/path#section> .
 ex:test8 ex:emptyPath <https://example.org/> .
 ex:test9 ex:rootPath <https://example.org> .
     `;
-    
-    const viewer = document.getElementById('viewer3') as any;
-    if (viewer) {
-        viewer.setAttribute('data', edgeCaseData);
-        console.log('Edge case test data loaded');
-    }
+
+  const viewer = document.getElementById("viewer3") as any;
+  if (viewer) {
+    viewer.setAttribute("data", edgeCaseData);
+    console.log("Edge case test data loaded");
+  }
 };

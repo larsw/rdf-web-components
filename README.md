@@ -38,25 +38,26 @@ This starts a development server at `http://localhost:3000` with hot module relo
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <script type="module" src="./rdf-viewer.js"></script>
-</head>
-<body>
-    <rdf-viewer 
-        format="turtle" 
-        layout="table"
-        show-namespaces="true" 
-        theme="light"
-        preferred-languages="en,de,fr"
-        vocabularies="https://www.w3.org/2000/01/rdf-schema,http://www.w3.org/2004/02/skos/core"
-        data='@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+  </head>
+  <body>
+    <rdf-viewer
+      format="turtle"
+      layout="table"
+      show-namespaces="true"
+      theme="light"
+      preferred-languages="en,de,fr"
+      vocabularies="https://www.w3.org/2000/01/rdf-schema,http://www.w3.org/2004/02/skos/core"
+      data='@prefix foaf: <http://xmlns.com/foaf/0.1/> .
               <http://example.org/alice> a foaf:Person ;
                   foaf:name "Alice Smith"@en ;
                   foaf:name "Alice Schmidt"@de ;
                   foaf:age 28 ;
-                  foaf:depiction <https://example.org/alice.jpg> .'>
+                  foaf:depiction <https://example.org/alice.jpg> .'
+    >
     </rdf-viewer>
-</body>
+  </body>
 </html>
 ```
 
@@ -78,19 +79,19 @@ This starts a development server at `http://localhost:3000` with hot module relo
 ### JavaScript API
 
 ```javascript
-const viewer = document.querySelector('rdf-viewer');
+const viewer = document.querySelector("rdf-viewer");
 
 // Set data programmatically
-viewer.setData(rdfData, 'turtle');
+viewer.setData(rdfData, "turtle");
 
 // Update configuration
 viewer.setConfig({
-    layout: 'table',
-    showNamespaces: false,
-    expandURIs: true,
-    theme: 'dark',
-    preferredLanguages: ['en', 'de'],
-    vocabularies: ['https://www.w3.org/2000/01/rdf-schema']
+  layout: "table",
+  showNamespaces: false,
+  expandURIs: true,
+  theme: "dark",
+  preferredLanguages: ["en", "de"],
+  vocabularies: ["https://www.w3.org/2000/01/rdf-schema"],
 });
 
 // Get parsed quads
@@ -100,13 +101,13 @@ const quads = viewer.getQuads();
 viewer.clear();
 
 // Add vocabulary dynamically
-await viewer.addVocabulary('http://www.w3.org/2004/02/skos/core');
+await viewer.addVocabulary("http://www.w3.org/2004/02/skos/core");
 
 // Remove vocabulary
-viewer.removeVocabulary('http://example.org/vocab');
+viewer.removeVocabulary("http://example.org/vocab");
 
 // Navigate to a specific subject
-viewer.navigateToSubject('http://example.org/alice');
+viewer.navigateToSubject("http://example.org/alice");
 
 // Show all subjects (return from navigation)
 viewer.showAllSubjects();
@@ -119,7 +120,7 @@ The component uses Shadow DOM and comes with built-in styling. It supports:
 - **Light and Dark Themes**: Switch via the `theme` attribute
 - **Table Layout**: Clean, structured table display with property-value pairs
 - **Turtle Layout**: Traditional Turtle-like hierarchical display
-- **Intelligent Value Rendering**: 
+- **Intelligent Value Rendering**:
   - Images are displayed inline with thumbnails
   - Numbers are highlighted and formatted
   - Dates show formatted tooltips
@@ -157,12 +158,14 @@ The test page includes several examples:
 ### Advanced Features
 
 #### Vocabulary Integration
+
 Load external vocabularies to get human-readable labels for properties:
 
 ```html
-<rdf-viewer 
-    vocabularies="https://www.w3.org/2000/01/rdf-schema,http://www.w3.org/2004/02/skos/core"
-    preferred-languages="en,de,fr">
+<rdf-viewer
+  vocabularies="https://www.w3.org/2000/01/rdf-schema,http://www.w3.org/2004/02/skos/core"
+  preferred-languages="en,de,fr"
+>
 </rdf-viewer>
 ```
 
@@ -171,6 +174,7 @@ The viewer will automatically use `rdfs:label`, `skos:prefLabel`, `skos:altLabel
 **Note on CORS**: When developing locally, external vocabulary URLs may be blocked by CORS policy. This is expected behavior and the component will still work correctly, just without enhanced labels from external vocabularies. In production environments with proper CORS configuration, or when serving vocabularies from the same origin, this limitation doesn't apply.
 
 #### Intelligent Object Rendering
+
 The viewer automatically detects and renders different data types:
 
 - **Images**: `foaf:depiction <https://example.org/photo.jpg>` → Shows thumbnail
@@ -183,6 +187,7 @@ The viewer automatically detects and renders different data types:
 ### Sample RDF Data
 
 #### FOAF Example with Multilingual Labels
+
 ```turtle
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix ex: <http://example.org/> .
@@ -199,6 +204,7 @@ ex:alice a foaf:Person ;
 ```
 
 #### Dublin Core Example with Rich Media
+
 ```turtle
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix ex: <http://example.org/> .
@@ -216,11 +222,13 @@ ex:document1 dc:title "Introduction to RDF"@en ;
 ## Browser Support
 
 This component uses modern Web Standards:
+
 - Custom Elements v1
 - Shadow DOM v1
 - ES Modules
 
 Supported browsers:
+
 - Chrome 54+
 - Firefox 63+
 - Safari 10.1+

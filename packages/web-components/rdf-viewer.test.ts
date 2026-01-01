@@ -16,7 +16,7 @@ class MockHTMLElement {
       "vocabularies",
       "show-images-inline",
       "enable-navigation",
-      "enable-content-negotiation"
+      "enable-content-negotiation",
     ];
   }
 
@@ -27,7 +27,7 @@ class MockHTMLElement {
   setAttribute(name: string, value: string) {
     const oldValue = this.attributes.get(name) ?? null;
     this.attributes.set(name, value);
-    if (typeof (this as any).attributeChangedCallback === 'function') {
+    if (typeof (this as any).attributeChangedCallback === "function") {
       (this as any).attributeChangedCallback(name, oldValue, value);
     }
   }
@@ -52,7 +52,7 @@ const registry = new Map<string, any>();
   },
   get(name: string) {
     return registry.get(name) ?? null;
-  }
+  },
 };
 
 (globalThis as any).document = {
@@ -60,9 +60,9 @@ const registry = new Map<string, any>();
     return {
       innerHTML: "",
       textContent: "",
-      attachShadow: () => ({ innerHTML: "" })
+      attachShadow: () => ({ innerHTML: "" }),
     };
-  }
+  },
 };
 
 (globalThis as any).requestAnimationFrame ??= (cb: FrameRequestCallback) => {
@@ -120,4 +120,3 @@ test("handles malformed data", () => {
   const viewer = new RDFViewer();
   expect(() => viewer.setData("<bad turtle", "turtle")).not.toThrow();
 });
-

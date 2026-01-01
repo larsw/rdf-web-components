@@ -8,8 +8,8 @@ const meta: Meta<typeof RdfViewer> = {
   args: {
     showNamespaces: true,
     preferredLanguages: ["en"],
-    showImagesInline: true
-  }
+    showImagesInline: true,
+  },
 };
 
 export default meta;
@@ -35,6 +35,6 @@ ex:bob a foaf:Person ;
 export const Table: Story = {
   args: {
     data: sampleData,
-    layout: "table"
-  }
+    layout: "table",
+  },
 };

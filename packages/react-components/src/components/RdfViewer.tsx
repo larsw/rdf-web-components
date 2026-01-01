@@ -28,6 +28,7 @@ export interface RdfViewerProps {
   expandUris?: boolean;
   preferredLanguages?: string[];
   showDatatypes?: boolean;
+  showLanguageTags?: boolean;
   theme?: "light" | "dark";
   showImagesInline?: boolean;
   vocabularies?: string[];
@@ -44,6 +45,7 @@ export function RdfViewer({
   expandUris = false,
   preferredLanguages,
   showDatatypes = false,
+  showLanguageTags = true,
   theme,
   showImagesInline = true,
   vocabularies,
@@ -217,6 +219,7 @@ export function RdfViewer({
             expandUris,
             preferredLanguages: normalizedPreferred,
             showDatatypes,
+            showLanguageTags,
             showImagesInline,
             labelMap,
             enableNavigation,
@@ -336,6 +339,7 @@ function renderObjectValue(
     expandUris: boolean;
     preferredLanguages: string[];
     showDatatypes: boolean;
+    showLanguageTags: boolean;
     showImagesInline: boolean;
     enableNavigation: boolean;
     onNavigate: (subject: string | null) => void;
@@ -554,6 +558,7 @@ function renderLiteralValue(
     expandUris: boolean;
     preferredLanguages: string[];
     showDatatypes: boolean;
+    showLanguageTags: boolean;
   },
 ) {
   const lang = literal.language?.toLowerCase();
@@ -576,7 +581,11 @@ function renderLiteralValue(
     return (
       <span className={`literal text${preferred ? " preferred" : ""}`.trim()}>
         <em>{value}</em>
-        {lang ? <span className="lang">@{lang}</span> : null}
+        {options.showLanguageTags && lang ? (
+          <span className="lang-tag" aria-label={`Language ${lang}`}>
+            {lang.toUpperCase()}
+          </span>
+        ) : null}
         {options.showDatatypes && datatype ? (
           <span className="datatype">
             ^^{formatTerm(datatype, namespaces, options.expandUris)}
@@ -590,8 +599,12 @@ function renderLiteralValue(
     <span
       className={`literal ${classification.kind}${preferred ? " preferred" : ""}`.trim()}
     >
-      &ldquo;{value}&rdquo;
-      {lang ? <span className="lang">@{lang}</span> : null}
+      <span className="literal-value">{value}</span>
+      {options.showLanguageTags && lang ? (
+        <span className="lang-tag" aria-label={`Language ${lang}`}>
+          {lang.toUpperCase()}
+        </span>
+      ) : null}
       {options.showDatatypes && datatype ? (
         <span className="datatype">
           ^^{formatTerm(datatype, namespaces, options.expandUris)}

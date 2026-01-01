@@ -18,15 +18,15 @@ export const localVocabularies: VocabularyDescriptor[] = [
     filePath: filePath("./files/example-vocab.ttl"),
     contentType: "text/turtle",
     title: "Custom Example Vocabulary",
-    description: "Local multilingual sample vocabulary used for demos."
+    description: "Local multilingual sample vocabulary used for demos.",
   },
   {
-    "key": "rdf",
+    key: "rdf",
     route: "/vocab/rdf",
     filePath: filePath("./files/vocabularies/rdf.ttl"),
     contentType: "text/turtle",
     title: "RDF",
-    description: "RDF 1.1 vocabulary."
+    description: "RDF 1.1 vocabulary.",
   },
   {
     key: "foaf",
@@ -34,7 +34,7 @@ export const localVocabularies: VocabularyDescriptor[] = [
     filePath: filePath("./files/vocabularies/foaf.ttl"),
     contentType: "text/turtle",
     title: "FOAF",
-    description: "Friend of a Friend vocabulary."
+    description: "Friend of a Friend vocabulary.",
   },
   {
     key: "dcterms",
@@ -42,7 +42,7 @@ export const localVocabularies: VocabularyDescriptor[] = [
     filePath: filePath("./files/vocabularies/dcterms.ttl"),
     contentType: "text/turtle",
     title: "Dublin Core Terms",
-    description: "DC Terms vocabulary."
+    description: "DC Terms vocabulary.",
   },
   {
     key: "dcelements",
@@ -50,7 +50,7 @@ export const localVocabularies: VocabularyDescriptor[] = [
     filePath: filePath("./files/vocabularies/dcelements.ttl"),
     contentType: "text/turtle",
     title: "Dublin Core Elements",
-    description: "DC Elements vocabulary."
+    description: "DC Elements vocabulary.",
   },
   {
     key: "rdfs",
@@ -58,7 +58,7 @@ export const localVocabularies: VocabularyDescriptor[] = [
     filePath: filePath("./files/vocabularies/rdfs.ttl"),
     contentType: "text/turtle",
     title: "RDF Schema",
-    description: "RDFS vocabulary."
+    description: "RDFS vocabulary.",
   },
   {
     key: "schema",
@@ -66,14 +66,18 @@ export const localVocabularies: VocabularyDescriptor[] = [
     filePath: filePath("./files/vocabularies/schema.jsonld"),
     contentType: "application/ld+json",
     title: "Schema.org",
-    description: "Schema.org JSON-LD context."
-  }
+    description: "Schema.org JSON-LD context.",
+  },
 ];
 
-export function findVocabularyByRoute(route: string): VocabularyDescriptor | undefined {
-  return localVocabularies.find(vocab => vocab.route === route);
+export function findVocabularyByRoute(
+  route: string,
+): VocabularyDescriptor | undefined {
+  return localVocabularies.find((vocab) => vocab.route === route);
 }
 
-export function findVocabularyByKey(key: string): VocabularyDescriptor | undefined {
-  return localVocabularies.find(vocab => vocab.key === key);
+export function findVocabularyByKey(
+  key: string,
+): VocabularyDescriptor | undefined {
+  return localVocabularies.find((vocab) => vocab.key === key);
 }
