@@ -21,6 +21,14 @@ export const localVocabularies: VocabularyDescriptor[] = [
     description: "Local multilingual sample vocabulary used for demos."
   },
   {
+    "key": "rdf",
+    route: "/vocab/rdf",
+    filePath: filePath("./files/vocabularies/rdf.ttl"),
+    contentType: "text/turtle",
+    title: "RDF",
+    description: "RDF 1.1 vocabulary."
+  },
+  {
     key: "foaf",
     route: "/vocab/foaf",
     filePath: filePath("./files/vocabularies/foaf.ttl"),

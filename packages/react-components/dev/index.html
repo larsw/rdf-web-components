@@ -1,10 +1,16 @@
-<html>
+<html data-color-scheme="light">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RDF React Components Playground</title>
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      if (!globalThis.global) {
+        globalThis.global = globalThis;
+      }
+    </script>
     <script type="module" src="./frontend.tsx"></script>
   </body>
 </html>

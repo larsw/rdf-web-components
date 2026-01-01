@@ -1,0 +1,34 @@
+name: Publish React Components
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "react-rdf-components-v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.19"
+          cache: true
+      - name: Install
+        run: bun install
+      - name: Test
+        run: bun run test
+      - name: Build
+        run: bun run --filter @sral/react-rdf-components build
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish
+        run: bun publish --access public
+        working-directory: packages/react-components
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

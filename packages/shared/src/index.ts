@@ -1,5 +1,16 @@
 import { Parser, Quad } from "n3";
 
+const globalScope = globalThis as typeof globalThis & { global?: typeof globalThis };
+if (!globalScope.global) {
+  globalScope.global = globalScope;
+}
+export {
+  findVocabularyByKey,
+  findVocabularyByRoute,
+  localVocabularies,
+  type VocabularyDescriptor
+} from "./vocab";
+
 export type RDFFormat = "turtle" | "n-triples" | "n-quads" | "trig" | "json-ld";
 export type NamespaceMap = Map<string, string>;
 

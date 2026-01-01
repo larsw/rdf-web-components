@@ -1,29 +1,45 @@
 {
-  "name": "@rdf-web-components/react-components",
+  "name": "@sral/react-rdf-components",
+  "version": "0.1.0",
   "type": "module",
-  "module": "src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./src/index.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "bun --hot ./dev/server.ts",
-    "build": "bun build ./src/index.ts --outdir dist --external react --external react-dom --external @rdf-web-components/shared",
+    "build": "bun build ./src/index.ts --outdir dist --external react --external react-dom --external @rdf-web-components/shared --external @digdir/designsystemet-react",
     "test": "bun test --preload ./test/setup.ts",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@rdf-web-components/shared": "workspace:shared",
+    "@digdir/designsystemet-react": "1.9.0",
+    "@rdf-web-components/shared": "0.1.0",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
+  "peerDependencies": {
+    "@digdir/designsystemet-css": "1.9.0"
+  },
   "devDependencies": {
-    "@storybook/addon-a11y": "10.1.7",
-    "@storybook/react-vite": "10.1.7",
-    "storybook": "10.1.7",
+    "@digdir/designsystemet-css": "^1.9.0",
+    "@storybook/addon-a11y": "10.1.11",
+    "@storybook/react-vite": "10.1.11",
+    "storybook": "10.1.11",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.0.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "happy-dom": "20.0.11",
-    "@storybook/addon-docs": "10.1.7"
+    "@storybook/addon-docs": "10.1.11"
   }
 }

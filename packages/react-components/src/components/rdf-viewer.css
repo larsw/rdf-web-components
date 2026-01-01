@@ -1,0 +1,33 @@
+.rdf-viewer .literal {
+  color: var(--ds-color-neutral-text-default);
+}
+
+.rdf-viewer .literal.numeric {
+  color: var(--ds-color-info-text-default);
+}
+
+.rdf-viewer .literal.date {
+  color: var(--ds-color-brand2-text-default);
+}
+
+.rdf-viewer .literal.boolean {
+  color: var(--ds-color-warning-text-default);
+}
+
+.rdf-viewer .literal.email {
+  color: var(--ds-color-accent-text-default);
+}
+
+.rdf-viewer .uri-link {
+  color: var(--ds-color-accent-text-default);
+}
+
+.rdf-viewer .content-type-hint {
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: 0.875em;
+  margin-left: 0.25rem;
+}
+
+.rdf-viewer .resource-image {
+  border: 1px solid var(--ds-color-neutral-border-subtle);
+}

@@ -7,8 +7,8 @@
   ],
   "scripts": {
     "dev": "bun run --filter @rdf-web-components/web-components dev",
-    "build": "bun run --filter @rdf-web-components/web-components build && bun run --filter @rdf-web-components/react-components build",
-    "test": "bun run --filter @rdf-web-components/shared test && bun run --filter @rdf-web-components/web-components test && bun run --filter @rdf-web-components/react-components test",
+    "build": "bun run --filter @rdf-web-components/web-components build && bun run --filter @sral/react-rdf-components build",
+    "test": "bun run --filter @rdf-web-components/shared test && bun run --filter @rdf-web-components/web-components test && bun run --filter @sral/react-rdf-components test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "prettier --check \"**/*.{ts,tsx,md}\""
   },

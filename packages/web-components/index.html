@@ -90,6 +90,11 @@
     </style>
 </head>
 <body>
+    <script>
+        if (!globalThis.global) {
+            globalThis.global = globalThis;
+        }
+    </script>
     <div class="container">
         <h1>RDF Viewer Web Component Test</h1>
         
