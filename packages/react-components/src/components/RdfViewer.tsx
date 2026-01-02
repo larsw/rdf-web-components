@@ -287,10 +287,12 @@ function renderNamespaceList(namespaces: NamespaceMap) {
             namespaces.entries() as IterableIterator<[string, string]>,
           ).map(([prefix, namespace]) => (
             <List.Item key={prefix} className="namespace-item">
-              <strong>{prefix}</strong>
-              <div>
-                <code>&lt;{namespace}&gt;</code>
-              </div>
+              <span className="namespace-prefix">{prefix}</span>
+              <span className="namespace-separator" aria-hidden="true">
+                {" "}
+                →{" "}
+              </span>
+              <code>&lt;{namespace}&gt;</code>
             </List.Item>
           ))}
         </List.Unordered>

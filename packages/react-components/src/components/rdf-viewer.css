@@ -72,10 +72,18 @@
 }
 
 .rdf-viewer .namespace-item {
-  display: grid;
-  grid-template-columns: minmax(90px, auto) minmax(0, 1fr);
-  gap: 0.5rem;
+  display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.rdf-viewer .namespace-prefix {
+  font-weight: 600;
+}
+
+.rdf-viewer .namespace-separator {
+  color: var(--ds-color-neutral-text-subtle);
 }
 
 .rdf-viewer .namespace-item code {
