@@ -60,7 +60,7 @@ export type PredicateRenderer = (args: {
 export interface RdfDetailsViewProps {
   data: string;
   format?: RDFFormat;
-  layout?: "table" | "turtle";
+  layout?: "table";
   showNamespaces?: boolean;
   expandUris?: boolean;
   preferredLanguages?: string[];
@@ -281,27 +281,25 @@ export function RdfDetailsView({
           onShowAll={() => setSelectedSubject(null)}
         />
       ) : null}
-      {layout === "turtle"
-        ? renderTurtleLayout(quads, namespaces, expandUris)
-        : renderTableLayout(groupedSubjects, namespaces, {
-            expandUris,
-            preferredLanguages: normalizedPreferred,
-            showDatatypes,
-            showLanguageTags,
-            showImagesInline,
-            showImageUrls,
-            imagePredicateSet,
-            predicateOrder: normalizedPredicateOrder,
-            labelMap,
-            enableNavigation,
-            selectedSubject,
-            onNavigate: setSelectedSubject,
-            subjects,
-            contentTypeCache,
-            metaMap,
-            literalRenderers,
-            predicateRenderers,
-          })}
+      {renderTableLayout(groupedSubjects, namespaces, {
+        expandUris,
+        preferredLanguages: normalizedPreferred,
+        showDatatypes,
+        showLanguageTags,
+        showImagesInline,
+        showImageUrls,
+        imagePredicateSet,
+        predicateOrder: normalizedPredicateOrder,
+        labelMap,
+        enableNavigation,
+        selectedSubject,
+        onNavigate: setSelectedSubject,
+        subjects,
+        contentTypeCache,
+        metaMap,
+        literalRenderers,
+        predicateRenderers,
+      })}
     </div>
   );
 }
@@ -597,71 +595,6 @@ function renderObjectValue(
   return defaultRender();
 }
 
-function renderTurtleLayout(
-  quads: Quad[],
-  namespaces: NamespaceMap,
-  expandUris: boolean,
-) {
-  const namespaceLines = Array.from(
-    namespaces.entries() as IterableIterator<[string, string]>,
-  )
-    .map(([prefix, ns]) => `@prefix ${prefix}: <${ns}> .`)
-    .join("\n");
-
-  const statements = quads.map((quad) => {
-    const subject = formatTerm(quad.subject.value, namespaces, expandUris);
-    const predicate = formatTerm(quad.predicate.value, namespaces, expandUris);
-    const object =
-      quad.object.termType === "Literal"
-        ? formatLiteralForTurtle(quad, namespaces, expandUris)
-        : formatTerm(quad.object.value, namespaces, expandUris);
-    return `${subject} ${predicate} ${object} .`;
-  });
-
-  return (
-    <Card>
-      <CardBlock>
-        <Heading level={3} data-size="sm">
-          Turtle
-        </Heading>
-        <pre
-          className="turtle-view"
-          style={{ margin: "0.75rem 0 0", whiteSpace: "pre-wrap" }}
-        >
-          {namespaceLines}
-          {"\n\n"}
-          {statements.join("\n")}
-        </pre>
-      </CardBlock>
-    </Card>
-  );
-}
-
-function formatLiteralForTurtle(
-  quad: Quad,
-  namespaces: NamespaceMap,
-  expandUris: boolean,
-) {
-  let lang: string | undefined;
-  let datatype: string | undefined;
-  let literal: string = "";
-  if (quad.object instanceof Literal) {
-    lang = quad.object.language;
-    datatype = quad.object.datatype?.value;
-    literal = `"${quad.object.value}"`;
-  }
-
-  if (lang) {
-    literal += `@${lang}`;
-  } else if (
-    datatype &&
-    datatype !== "http://www.w3.org/2001/XMLSchema#string"
-  ) {
-    literal += `^^${formatTerm(datatype, namespaces, expandUris)}`;
-  }
-
-  return literal;
-}
 
 function groupQuadsBySubject(quads: Quad[]): Map<string, Map<string, Quad[]>> {
   const subjects = new Map<string, Map<string, Quad[]>>();

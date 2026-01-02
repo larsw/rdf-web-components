@@ -11,7 +11,7 @@ export interface RDFDetailsViewConfig {
   showNamespaces?: boolean;
   expandURIs?: boolean;
   theme?: "light" | "dark";
-  layout?: "turtle" | "table";
+  layout?: "table";
   preferredLanguages?: string[];
   vocabularies?: string[];
   showImagesInline?: boolean;
@@ -105,8 +105,10 @@ export class RDFDetailsView extends HTMLElement {
     const theme = this.getAttribute("theme") as RDFDetailsViewConfig["theme"];
     if (theme) this.config.theme = theme;
 
-    const layout = this.getAttribute("layout") as RDFDetailsViewConfig["layout"];
-    if (layout) this.config.layout = layout;
+    const layout = this.getAttribute("layout");
+    if (layout === "table") {
+      this.config.layout = "table";
+    }
 
     const preferredLanguages = this.getAttribute("preferred-languages");
     if (preferredLanguages) {
@@ -220,11 +222,7 @@ export class RDFDetailsView extends HTMLElement {
       html += this.renderNavigationControls();
     }
 
-    if (this.config.layout === "table") {
-      html += this.renderTableLayout(quads);
-    } else {
-      html += this.renderTurtleLayout(quads);
-    }
+    html += this.renderTableLayout(quads);
 
     html += "</div>";
     return html;
@@ -324,78 +322,6 @@ export class RDFDetailsView extends HTMLElement {
     return html;
   }
 
-  private renderTurtleLayout(quads: Quad[]): string {
-    // Group quads by subject
-    const subjects = new Map<string, Quad[]>();
-    quads.forEach((quad: Quad) => {
-      const subjectValue = quad.subject.value;
-      if (!subjects.has(subjectValue)) {
-        subjects.set(subjectValue, []);
-      }
-      subjects.get(subjectValue)!.push(quad);
-    });
-
-    // If currentSubject is set, show only that subject
-    if (this.currentSubject && subjects.has(this.currentSubject)) {
-      const filteredSubjects = new Map();
-      filteredSubjects.set(
-        this.currentSubject,
-        subjects.get(this.currentSubject)!,
-      );
-      subjects.clear();
-      subjects.set(
-        this.currentSubject,
-        filteredSubjects.get(this.currentSubject),
-      );
-    }
-
-    let html = '<div class="turtle-layout">';
-    subjects.forEach((subjectQuads, subjectValue) => {
-      html += this.renderSubject(subjectValue, subjectQuads);
-    });
-    html += "</div>";
-    return html;
-  }
-
-  private renderSubject(subjectValue: string, quads: Quad[]): string {
-    const displaySubject = this.getDisplayLabel(subjectValue);
-    const predicates = new Map<string, Quad[]>();
-
-    quads.forEach((quad) => {
-      const predicateValue = quad.predicate.value;
-      if (!predicates.has(predicateValue)) {
-        predicates.set(predicateValue, []);
-      }
-      predicates.get(predicateValue)!.push(quad);
-    });
-
-    let html = '<div class="subject-block">';
-    html += `<div class="subject" data-uri="${this.escapeHtml(subjectValue)}">${this.escapeHtml(displaySubject)}</div>`;
-    html += '<div class="predicates">';
-
-    predicates.forEach((predicateQuads, predicateValue) => {
-      const displayPredicate = this.getDisplayLabel(predicateValue);
-      html += '<div class="predicate-block">';
-      html += `<span class="predicate" title="${this.escapeHtml(predicateValue)}">${this.escapeHtml(displayPredicate)}</span>`;
-      html += '<span class="objects">';
-
-      predicateQuads.forEach((quad, index) => {
-        html += this.renderObjectValue(
-          quad.object.value,
-          quad.object.termType,
-          Boolean(this.config.enableNavigation),
-        );
-        if (index < predicateQuads.length - 1) {
-          html += ", ";
-        }
-      });
-
-      html += "</span></div>";
-    });
-
-    html += "</div></div>";
-    return html;
-  }
 
   private renderNamespaces(): string {
     const namespaces = this.extractNamespaces();
@@ -634,48 +560,6 @@ export class RDFDetailsView extends HTMLElement {
         word-break: break-word;
       }
 
-      /* Turtle Layout Styles */
-      .turtle-layout .subject-block {
-        margin-bottom: 1.5rem;
-        padding-left: 0;
-      }
-
-      .turtle-layout .subject {
-        font-weight: bold;
-        color: #0066cc;
-        margin-bottom: 0.5rem;
-      }
-
-      .dark .turtle-layout .subject {
-        color: #4fc3f7;
-      }
-
-      .turtle-layout .predicates {
-        margin-left: 2rem;
-      }
-
-      .turtle-layout .predicate-block {
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: baseline;
-        gap: 0.75rem;
-      }
-
-      .turtle-layout .predicate {
-        color: #cc6600;
-        font-weight: 500;
-        min-width: 200px;
-        flex-shrink: 0;
-      }
-
-      .dark .turtle-layout .predicate {
-        color: #ffb74d;
-      }
-
-      .turtle-layout .objects {
-        flex: 1;
-      }
-
       /* Value type specific styles */
       .uri {
         color: #0066cc;
@@ -836,20 +720,6 @@ export class RDFDetailsView extends HTMLElement {
 
       /* Responsive design */
       @media (max-width: 768px) {
-        .turtle-layout .predicate-block {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.25rem;
-        }
-
-        .turtle-layout .predicate {
-          min-width: auto;
-        }
-
-        .turtle-layout .predicates {
-          margin-left: 1rem;
-        }
-
         .property-cell {
           width: auto;
           min-width: auto;

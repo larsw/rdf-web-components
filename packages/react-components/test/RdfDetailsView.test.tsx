@@ -74,12 +74,6 @@ describe("RdfDetailsView", () => {
     expect(screen.getByText(/Alice/)).toBeInTheDocument();
   });
 
-  test("renders turtle layout", () => {
-    render(<RdfDetailsView data={sampleData} layout="turtle" />);
-    expect(screen.getByText(/@prefix foaf:/i)).toBeInTheDocument();
-    expect(screen.getByText(/exa:alice foaf:name/)).toBeInTheDocument();
-  });
-
   test("uses vocabulary labels when provided", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () =>

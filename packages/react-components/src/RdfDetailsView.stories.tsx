@@ -317,14 +317,6 @@ export const DocumentsOnly: Story = {
   },
 };
 
-export const TurtleLayout: Story = {
-  args: {
-    data: foafPersonData,
-    layout: "turtle",
-    vocabularies: [vocabUri],
-  },
-};
-
 export const ExpandedUris: Story = {
   args: {
     data: foafPersonData,

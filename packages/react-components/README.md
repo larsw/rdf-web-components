@@ -40,7 +40,7 @@ This library renders Designsystemet React components. Import the Designsystemet 
 
 - `data` (string, required): RDF document content.
 - `format` (string): `turtle`, `n-triples`, `n-quads`, `trig`, `json-ld`.
-- `layout` (string): `table` or `turtle`.
+- `layout` (string): `table`.
 - `showNamespaces` (boolean): Show namespace prefixes.
 - `expandUris` (boolean): Expand prefixed URIs.
 - `preferredLanguages` (string[]): Preferred label languages.

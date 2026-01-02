@@ -368,8 +368,6 @@ function setupControls() {
 
 // Function to update viewers
 (window as any).updateViewer1 = function () {
-  const layout1 = (document.getElementById("layout-1") as HTMLSelectElement)
-    .value;
   const showNamespaces1 = (
     document.getElementById("show-namespaces-1") as HTMLInputElement
   ).checked;
@@ -393,7 +391,6 @@ function setupControls() {
   const viewer1 = document.getElementById("viewer1") as any;
   const section1 = document.getElementById("section-1") as HTMLElement | null;
 
-  viewer1.setAttribute("layout", layout1);
   viewer1.setAttribute("show-namespaces", showNamespaces1.toString());
   viewer1.setAttribute("expand-uris", expandUris1.toString());
   viewer1.setAttribute("show-images-inline", showImagesInline1.toString());
@@ -409,8 +406,6 @@ function setupControls() {
 };
 
 (window as any).updateViewer2 = function () {
-  const layout2 = (document.getElementById("layout-2") as HTMLSelectElement)
-    .value;
   const showNamespaces2 = (
     document.getElementById("show-namespaces-2") as HTMLInputElement
   ).checked;
@@ -431,7 +426,6 @@ function setupControls() {
   const viewer2 = document.getElementById("viewer2") as any;
   const section2 = document.getElementById("section-2") as HTMLElement | null;
 
-  viewer2.setAttribute("layout", layout2);
   viewer2.setAttribute("show-namespaces", showNamespaces2.toString());
   viewer2.setAttribute("expand-uris", expandUris2.toString());
   viewer2.setAttribute("show-images-inline", showImagesInline2.toString());
@@ -452,8 +446,6 @@ function setupControls() {
   ).value;
   const format3 = (document.getElementById("format-3") as HTMLSelectElement)
     .value;
-  const layout3 = (document.getElementById("layout-3") as HTMLSelectElement)
-    .value;
   const showNamespaces3 = (
     document.getElementById("show-namespaces-3") as HTMLInputElement
   ).checked;
@@ -470,7 +462,6 @@ function setupControls() {
 
   viewer3.setAttribute("data", customData);
   viewer3.setAttribute("format", format3);
-  viewer3.setAttribute("layout", layout3);
   viewer3.setAttribute("show-namespaces", showNamespaces3.toString());
   viewer3.setAttribute("expand-uris", expandUris3.toString());
   viewer3.setAttribute("show-images-inline", showImagesInline3.toString());

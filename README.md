@@ -44,7 +44,6 @@ This starts a development server at `http://localhost:3000` with hot module relo
   <body>
     <rdf-details-view
       format="turtle"
-      layout="table"
       show-namespaces="true"
       theme="light"
       preferred-languages="en,de,fr"
@@ -67,7 +66,6 @@ This starts a development server at `http://localhost:3000` with hot module relo
 
 - `data`: The RDF data to display (as a string)
 - `format`: The RDF format (`turtle`, `n-triples`, `n-quads`, `trig`, `json-ld`)
-- `layout`: Display layout (`table`, `turtle`) - table layout provides a more structured view
 - `show-namespaces`: Whether to show namespace prefixes (`true`/`false`)
 - `expand-uris`: Whether to show full URIs instead of prefixed versions (`true`/`false`)
 - `theme`: Visual theme (`light`/`dark`)
@@ -86,7 +84,6 @@ viewer.setData(rdfData, "turtle");
 
 // Update configuration
 viewer.setConfig({
-  layout: "table",
   showNamespaces: false,
   expandURIs: true,
   theme: "dark",

@@ -150,13 +150,6 @@
                     </select>
                 </label>
                 <label>
-                    Layout:
-                    <select id="layout-1">
-                        <option value="table" selected>Table</option>
-                        <option value="turtle">Turtle</option>
-                    </select>
-                </label>
-                <label>
                     <input type="checkbox" id="show-namespaces-1" checked>
                     Show Namespaces
                 </label>
@@ -187,7 +180,6 @@
             </div>
             <rdf-details-view id="viewer1" 
                         format="turtle" 
-                        layout="table" 
                         show-namespaces="true"
                         expand-uris="false" 
                         theme="light"
@@ -215,13 +207,6 @@
                     </select>
                 </label>
                 <label>
-                    Layout:
-                    <select id="layout-2">
-                        <option value="table" selected>Table</option>
-                        <option value="turtle">Turtle</option>
-                    </select>
-                </label>
-                <label>
                     <input type="checkbox" id="show-namespaces-2" checked>
                     Show Namespaces
                 </label>
@@ -246,7 +231,7 @@
                 </label>
                 <button onclick="updateViewer2()">Update</button>
             </div>
-            <rdf-details-view id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-details-view>
+            <rdf-details-view id="viewer2" format="turtle" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-details-view>
         </div>
         
         <div class="test-section" id="section-3" data-theme="light">
@@ -258,13 +243,6 @@
                         <option value="turtle">Turtle</option>
                         <option value="n-triples">N-Triples</option>
                         <option value="n-quads">N-Quads</option>
-                    </select>
-                </label>
-                <label>
-                    Layout:
-                    <select id="layout-3">
-                        <option value="table" selected>Table</option>
-                        <option value="turtle">Turtle</option>
                     </select>
                 </label>
                 <label>
@@ -310,7 +288,7 @@ ex:person1 a foaf:Person ;
 ex:person2 a foaf:Person ;
     foaf:name "Jane Smith"@en ;
     foaf:nick "jane" .</textarea>
-            <rdf-details-view id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-details-view>
+            <rdf-details-view id="viewer3" format="turtle" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-details-view>
         </div>
     </div>
 
