@@ -1,7 +1,11 @@
 {
-  "name": "@rdf-web-components/web-components",
+  "name": "@sral/rdf-web-components",
+  "version": "0.1.0",
   "type": "module",
   "module": "index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "bun --hot index.ts",
     "start": "bun index.ts",
@@ -9,7 +13,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@rdf-web-components/shared": "workspace:*",
+    "@sral/rdf-components-shared": "workspace:*",
     "n3": "1.26.0"
   },
   "devDependencies": {

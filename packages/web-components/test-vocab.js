@@ -1,5 +1,5 @@
 import { Parser } from 'n3';
-import { findVocabularyByKey } from '@rdf-web-components/shared';
+import { findVocabularyByKey } from '@sral/rdf-components-shared';
 
 console.log('Testing vocabulary parsing...');
 

@@ -57,3 +57,10 @@ This library renders Designsystemet React components. Import the Designsystemet 
 - `literalRenderers` (Record<string, LiteralRenderer>): Map datatype IRI to custom literal renderers.
 - `predicateRenderers` (Record<string, PredicateRenderer>): Map predicate IRI to custom object renderers.
 - `className` (string): Wrapper class name.
+
+## Exports
+
+- `RdfDetailsView`: React component.
+- `RdfDetailsViewProps`: Props interface for `RdfDetailsView`.
+- `LiteralRenderer`: Literal renderer callback type.
+- `PredicateRenderer`: Predicate renderer callback type.

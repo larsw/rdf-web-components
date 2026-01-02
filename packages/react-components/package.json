@@ -15,7 +15,7 @@
   },
   "scripts": {
     "dev": "bun --hot ./dev/server.ts",
-    "build": "bun build ./src/index.ts --outdir dist --external react --external react-dom --external @rdf-web-components/shared --external @digdir/designsystemet-react",
+    "build": "bun build ./src/index.ts --outdir dist --external react --external react-dom --external @sral/rdf-components-shared --external @digdir/designsystemet-react",
     "test": "bun test --preload ./test/setup.ts",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@digdir/designsystemet-react": "1.9.0",
-    "@rdf-web-components/shared": "0.1.0",
+    "@sral/rdf-components-shared": "0.1.0",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },

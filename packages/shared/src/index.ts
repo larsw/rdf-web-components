@@ -6,6 +6,9 @@ const globalScope = globalThis as typeof globalThis & {
 if (!globalScope.global) {
   globalScope.global = globalScope;
 }
+/**
+ * Vocabulary lookups and descriptors for local sample vocabularies.
+ */
 export {
   findVocabularyByKey,
   findVocabularyByRoute,
@@ -13,7 +16,9 @@ export {
   type VocabularyDescriptor,
 } from "./vocab";
 
+/** Supported RDF parser formats. */
 export type RDFFormat = "turtle" | "n-triples" | "n-quads" | "trig" | "json-ld";
+/** Map of prefix to namespace URI. */
 export type NamespaceMap = Map<string, string>;
 
 const COMMON_PREFIXES: Record<string, string> = {
@@ -27,6 +32,9 @@ const COMMON_PREFIXES: Record<string, string> = {
   "http://www.w3.org/2001/XMLSchema#": "xsd",
 };
 
+/**
+ * Parse RDF data into N3 quads.
+ */
 export const parseRdf = (
   data: string,
   format: RDFFormat = "turtle",
@@ -35,6 +43,9 @@ export const parseRdf = (
   return parser.parse(data);
 };
 
+/**
+ * Extract namespace prefixes from RDF quads.
+ */
 export const extractNamespacesFromQuads = (quads: Quad[]): NamespaceMap => {
   const namespaces: NamespaceMap = new Map();
 
@@ -74,6 +85,9 @@ export const extractNamespacesFromQuads = (quads: Quad[]): NamespaceMap => {
   return namespaces;
 };
 
+/**
+ * Generate a prefix suggestion for a namespace URI.
+ */
 export const generatePrefix = (namespace: string): string | null => {
   if (COMMON_PREFIXES[namespace]) {
     return COMMON_PREFIXES[namespace];
@@ -94,6 +108,9 @@ export const generatePrefix = (namespace: string): string | null => {
   return null;
 };
 
+/**
+ * Shorten a URI using known namespaces, falling back to the full URI.
+ */
 export const shortenUri = (uri: string, namespaces: NamespaceMap): string => {
   for (const [prefix, namespace] of namespaces) {
     if (uri.startsWith(namespace)) {

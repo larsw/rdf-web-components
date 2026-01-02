@@ -25,8 +25,9 @@ import {
   shortenUri,
   type NamespaceMap,
   type RDFFormat,
-} from "@rdf-web-components/shared";
+} from "@sral/rdf-components-shared";
 
+/** Custom literal renderer keyed by datatype IRI. */
 export type LiteralRenderer = (args: {
   quad: Quad;
   literal: Literal;
@@ -39,6 +40,7 @@ export type LiteralRenderer = (args: {
   };
 }) => ReactNode;
 
+/** Custom predicate renderer keyed by predicate IRI. */
 export type PredicateRenderer = (args: {
   quad: Quad;
   predicate: string;
@@ -57,6 +59,7 @@ export type PredicateRenderer = (args: {
   defaultRender: () => ReactNode;
 }) => ReactNode;
 
+/** Props for the RdfDetailsView component. */
 export interface RdfDetailsViewProps {
   data: string;
   format?: RDFFormat;
@@ -90,6 +93,9 @@ const DEFAULT_IMAGE_PREDICATES = [
   "http://xmlns.com/foaf/0.1/thumbnail",
 ];
 
+/**
+ * Render RDF data in a structured details view.
+ */
 export function RdfDetailsView({
   data,
   format = "turtle",

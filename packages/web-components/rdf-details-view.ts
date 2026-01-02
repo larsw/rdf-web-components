@@ -2,10 +2,11 @@ import { Parser, Store, DataFactory, Quad } from "n3";
 import {
   extractNamespacesFromQuads,
   shortenUri,
-} from "@rdf-web-components/shared";
+} from "@sral/rdf-components-shared";
 
 const { namedNode } = DataFactory;
 
+/** Configuration options for the RDFDetailsView web component. */
 export interface RDFDetailsViewConfig {
   format?: "turtle" | "n-triples" | "n-quads" | "trig" | "json-ld";
   showNamespaces?: boolean;
@@ -21,6 +22,9 @@ export interface RDFDetailsViewConfig {
 
 /**
  * A Web Component for displaying RDF data in a structured, readable format
+ */
+/**
+ * Web component for rendering RDF data in a structured details view.
  */
 export class RDFDetailsView extends HTMLElement {
   private store: Store;
@@ -749,6 +753,9 @@ export class RDFDetailsView extends HTMLElement {
   }
 
   // Public API methods
+  /**
+   * Set RDF data and optional format on the component.
+   */
   public setData(data: string, format?: RDFDetailsViewConfig["format"]) {
     this.setAttribute("data", data);
     if (format) {
@@ -756,6 +763,9 @@ export class RDFDetailsView extends HTMLElement {
     }
   }
 
+  /**
+   * Update component configuration.
+   */
   public setConfig(config: Partial<RDFDetailsViewConfig>) {
     Object.assign(this.config, config);
 
@@ -788,15 +798,24 @@ export class RDFDetailsView extends HTMLElement {
     this.render();
   }
 
+  /**
+   * Return parsed RDF quads for the current dataset.
+   */
   public getQuads(): Quad[] {
     return this.store.getQuads(null, null, null, null);
   }
 
+  /**
+   * Clear the current dataset.
+   */
   public clear() {
     this.store = new Store();
     this.render();
   }
 
+  /**
+   * Add a vocabulary URL and load it.
+   */
   public async addVocabulary(url: string) {
     if (!this.config.vocabularies) {
       this.config.vocabularies = [];
@@ -812,6 +831,9 @@ export class RDFDetailsView extends HTMLElement {
     }
   }
 
+  /**
+   * Remove a vocabulary URL from the active list.
+   */
   public removeVocabulary(url: string) {
     if (this.config.vocabularies) {
       this.config.vocabularies = this.config.vocabularies.filter(
@@ -1267,6 +1289,9 @@ export class RDFDetailsView extends HTMLElement {
   }
 
   // Navigation methods
+  /**
+   * Navigate to a specific subject if it exists in the dataset.
+   */
   public navigateToSubject(subjectUri: string) {
     if (this.hasSubjectData(subjectUri)) {
       this.currentSubject = subjectUri;
@@ -1274,6 +1299,9 @@ export class RDFDetailsView extends HTMLElement {
     }
   }
 
+  /**
+   * Reset navigation to show all subjects.
+   */
   public showAllSubjects() {
     this.currentSubject = null;
     this.render();

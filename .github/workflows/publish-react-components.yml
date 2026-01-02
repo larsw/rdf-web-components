@@ -1,14 +1,35 @@
-name: Publish React Components
+name: Publish Packages
 
 on:
   workflow_dispatch:
   push:
     tags:
+      - "shared-v*"
+      - "web-components-v*"
       - "react-rdf-components-v*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - package: "@sral/rdf-components-shared"
+            path: packages/shared
+            filter: "@sral/rdf-components-shared"
+            tag_prefix: "shared-v"
+            access: public
+          - package: "@sral/rdf-web-components"
+            path: packages/web-components
+            filter: "@sral/rdf-web-components"
+            tag_prefix: "web-components-v"
+            access: public
+          - package: "@sral/react-rdf-components"
+            path: packages/react-components
+            filter: "@sral/react-rdf-components"
+            tag_prefix: "react-rdf-components-v"
+            access: public
+    if: startsWith(github.ref_name, matrix.tag_prefix)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,17 +39,35 @@ jobs:
           bun-version: "1.2.19"
           cache: true
       - name: Install
-        run: bun install
+        run: bun install --frozen-lockfile
+      - name: Derive version from tag
+        id: tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PREFIX="${{ matrix.tag_prefix }}"
+          if [[ "${TAG}" != ${PREFIX}* ]]; then
+            echo "Tag ${TAG} does not match prefix ${PREFIX}" >&2
+            exit 1
+          fi
+          VERSION="${TAG#${PREFIX}}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Verify package version matches tag
+        run: |
+          PKG_VERSION=$(bun --print "JSON.parse(await Bun.file('${{ matrix.path }}/package.json').text()).version")
+          if [ "${PKG_VERSION}" != "${{ steps.tag.outputs.version }}" ]; then
+            echo "Package version ${PKG_VERSION} does not match tag version ${{ steps.tag.outputs.version }}" >&2
+            exit 1
+          fi
       - name: Test
-        run: bun run test
+        run: bun run --filter "${{ matrix.filter }}" test
       - name: Build
-        run: bun run --filter @sral/react-rdf-components build
+        run: bun run --filter "${{ matrix.filter }}" build
       - name: Configure npm auth
         run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish
-        run: bun publish --access public
-        working-directory: packages/react-components
+        run: bun publish --access ${{ matrix.access }}
+        working-directory: ${{ matrix.path }}
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

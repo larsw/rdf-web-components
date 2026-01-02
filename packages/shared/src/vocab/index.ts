@@ -1,3 +1,4 @@
+/** Metadata describing a locally bundled vocabulary. */
 export interface VocabularyDescriptor {
   key: string;
   route: string;
@@ -11,6 +12,7 @@ function filePath(relativePath: string) {
   return new URL(relativePath, import.meta.url).pathname;
 }
 
+/** Local vocabularies available for demo and development usage. */
 export const localVocabularies: VocabularyDescriptor[] = [
   {
     key: "custom",
@@ -70,12 +72,18 @@ export const localVocabularies: VocabularyDescriptor[] = [
   },
 ];
 
+/**
+ * Find a local vocabulary descriptor by route.
+ */
 export function findVocabularyByRoute(
   route: string,
 ): VocabularyDescriptor | undefined {
   return localVocabularies.find((vocab) => vocab.route === route);
 }
 
+/**
+ * Find a local vocabulary descriptor by key.
+ */
 export function findVocabularyByKey(
   key: string,
 ): VocabularyDescriptor | undefined {

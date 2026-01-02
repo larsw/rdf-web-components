@@ -13,7 +13,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@digdir/designsystemet-react": "1.9.0",
-        "@rdf-web-components/shared": "0.1.0",
+        "@sral/rdf-components-shared": "0.1.0",
         "react": "19.2.1",
         "react-dom": "19.2.1",
       },
@@ -34,7 +34,7 @@
       },
     },
     "packages/shared": {
-      "name": "@rdf-web-components/shared",
+      "name": "@sral/rdf-components-shared",
       "version": "0.1.0",
       "dependencies": {
         "n3": "1.26.0",
@@ -45,9 +45,10 @@
       },
     },
     "packages/web-components": {
-      "name": "@rdf-web-components/web-components",
+      "name": "@sral/rdf-web-components",
+      "version": "0.1.0",
       "dependencies": {
-        "@rdf-web-components/shared": "workspace:*",
+        "@sral/rdf-components-shared": "workspace:*",
         "n3": "1.26.0",
       },
       "devDependencies": {
@@ -189,10 +190,6 @@
 
     "@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.4", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-Jl+bCv8HxKnlTLVrcDE8zTMJ09R9/ukw4qBs/oZClOfoQk/cOTbDn+NceXfV7j09YPVQUryJPHurafcSg6EVKA=="],
 
-    "@rdf-web-components/shared": ["@rdf-web-components/shared@workspace:packages/shared"],
-
-    "@rdf-web-components/web-components": ["@rdf-web-components/web-components@workspace:packages/web-components"],
-
     "@rdfjs/types": ["@rdfjs/types@2.0.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-uyAzpugX7KekAXAHq26m3JlUIZJOC0uSBhpnefGV5i15bevDyyejoB7I+9MKeUrzXD8OOUI3+4FeV1wwQr5ihA=="],
 
     "@rollup/pluginutils": ["@rollup/pluginutils@5.3.0", "", { "dependencies": { "@types/estree": "^1.0.0", "estree-walker": "^2.0.2", "picomatch": "^4.0.2" }, "peerDependencies": { "rollup": "^1.20.0||^2.0.0||^3.0.0||^4.0.0" }, "optionalPeers": ["rollup"] }, "sha512-5EdhGZtnu3V88ces7s53hhfK5KSASnJZv8Lulpc04cWO3REESroJXg73DFsOmgbU2BhwV0E20bu2IDZb3VKW4Q=="],
@@ -240,6 +237,10 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.53.3", "", { "os": "win32", "cpu": "x64" }, "sha512-J9QDiOIZlZLdcot5NXEepDkstocktoVjkaKUtqzgzpt2yWjGlbYiKyp05rWwk4nypbYUNoFAztEgixoLaSETkg=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.53.3", "", { "os": "win32", "cpu": "x64" }, "sha512-UhTd8u31dXadv0MopwGgNOBpUVROFKWVQgAg5N1ESyCz8AuBcMqm4AuTjrwgQKGDfoFuz02EuMRHQIw/frmYKQ=="],
+
+    "@sral/rdf-components-shared": ["@sral/rdf-components-shared@workspace:packages/shared"],
+
+    "@sral/rdf-web-components": ["@sral/rdf-web-components@workspace:packages/web-components"],
 
     "@sral/react-rdf-components": ["@sral/react-rdf-components@workspace:packages/react-components"],
 
