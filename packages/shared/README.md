@@ -2,6 +2,8 @@
 
 Shared helpers and vocabulary descriptors for RDF components.
 
+This package is not intended to be used directly.
+
 ## Exports
 
 - `parseRdf(data: string, format?: RDFFormat): Quad[]`
