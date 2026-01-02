@@ -12,6 +12,7 @@ const meta: Meta<typeof RdfViewer> = {
     preferredLanguages: ["en"],
     showImagesInline: true,
     enableNavigation: true,
+    vocabularies: [],
   },
 };
 
@@ -230,6 +231,46 @@ ex:document3 dc:title "Linked Data Patterns"@en ;
     ex:isbn "978-0-111222-33-4" .
 `;
 
+const vocabData = `
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+foaf:name rdfs:label "Name"@en .
+foaf:nick rdfs:label "Nickname"@en .
+foaf:age rdfs:label "Age"@en .
+foaf:birthday rdfs:label "Birthday"@en .
+foaf:mbox rdfs:label "Email"@en .
+foaf:phone rdfs:label "Phone"@en .
+foaf:homepage rdfs:label "Homepage"@en .
+foaf:workplaceHomepage rdfs:label "Workplace"@en .
+foaf:depiction rdfs:label "Portrait"@en .
+foaf:knows rdfs:label "Knows"@en ; skos:comment "Related person"@en .
+
+dc:title rdfs:label "Title"@en .
+dc:creator rdfs:label "Creator"@en .
+dc:subject rdfs:label "Subject"@en .
+dc:description rdfs:label "Description"@en .
+dc:publisher rdfs:label "Publisher"@en .
+dc:date rdfs:label "Date"@en .
+dc:type rdfs:label "Type"@en .
+dc:format rdfs:label "Format"@en .
+dc:language rdfs:label "Language"@en .
+dc:rights rdfs:label "Rights"@en .
+
+ex:score rdfs:label "Score"@en .
+ex:verified rdfs:label "Verified"@en .
+ex:languages rdfs:label "Languages"@en .
+ex:skills rdfs:label "Skills"@en .
+ex:pages rdfs:label "Pages"@en .
+ex:cover rdfs:label "Cover"@en .
+ex:price rdfs:label "Price"@en .
+ex:isbn rdfs:label "ISBN"@en .
+`;
+
+const vocabUri = `data:text/turtle;charset=utf-8,${encodeURIComponent(vocabData)}`;
 const sampleData = `${foafPersonData}\n${dublinCoreData}`;
 
 const customLiteralRenderers: Record<string, LiteralRenderer> = {
@@ -252,6 +293,7 @@ export const FullDataset: Story = {
     data: sampleData,
     layout: "table",
     showDatatypes: true,
+    vocabularies: [vocabUri],
   },
 };
 
@@ -259,6 +301,7 @@ export const PeopleOnly: Story = {
   args: {
     data: foafPersonData,
     layout: "table",
+    vocabularies: [vocabUri],
   },
 };
 
@@ -267,6 +310,7 @@ export const DocumentsOnly: Story = {
     data: dublinCoreData,
     layout: "table",
     showDatatypes: true,
+    vocabularies: [vocabUri],
   },
 };
 
@@ -274,6 +318,7 @@ export const TurtleLayout: Story = {
   args: {
     data: foafPersonData,
     layout: "turtle",
+    vocabularies: [vocabUri],
   },
 };
 
@@ -281,6 +326,7 @@ export const ExpandedUris: Story = {
   args: {
     data: foafPersonData,
     expandUris: true,
+    vocabularies: [vocabUri],
   },
 };
 
@@ -288,6 +334,7 @@ export const NoLanguageTags: Story = {
   args: {
     data: foafPersonData,
     showLanguageTags: false,
+    vocabularies: [vocabUri],
   },
 };
 
@@ -295,6 +342,7 @@ export const NoNavigation: Story = {
   args: {
     data: foafPersonData,
     enableNavigation: false,
+    vocabularies: [vocabUri],
   },
 };
 
@@ -303,6 +351,7 @@ export const CustomRenderers: Story = {
     data: foafPersonData,
     literalRenderers: customLiteralRenderers,
     predicateRenderers: customPredicateRenderers,
+    vocabularies: [vocabUri],
   },
 };
 
@@ -310,6 +359,7 @@ export const DarkTheme: Story = {
   args: {
     data: foafPersonData,
     theme: "dark",
+    vocabularies: [vocabUri],
   },
   parameters: {
     globals: {

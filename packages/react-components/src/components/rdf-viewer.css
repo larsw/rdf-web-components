@@ -2,6 +2,12 @@
   color: var(--ds-color-neutral-text-default);
 }
 
+.rdf-viewer {
+  margin: 0 auto;
+  max-width: 960px;
+  width: 100%;
+}
+
 .rdf-viewer .literal-value {
   font-variant-numeric: tabular-nums;
 }
