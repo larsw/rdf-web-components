@@ -72,7 +72,7 @@ const registry = new Map<string, any>();
 
 (globalThis as any).cancelAnimationFrame ??= () => {};
 
-const { RDFViewer } = await import("./rdf-viewer.ts");
+const { RDFDetailsView } = await import("./rdf-details-view.ts");
 
 const sampleTurtle = `
 @prefix ex: <http://example.org/> .
@@ -84,39 +84,39 @@ ex:alice a foaf:Person ;
 `;
 
 test("defines the custom element", () => {
-  expect(registry.get("rdf-viewer")).toBeDefined();
+  expect(registry.get("rdf-details-view")).toBeDefined();
 });
 
 test("instantiates and renders", () => {
-  const viewer = new RDFViewer();
+  const viewer = new RDFDetailsView();
   expect(viewer.shadowRoot).toBeDefined();
 });
 
 test("observed attributes include vocabularies", () => {
-  expect(RDFViewer.observedAttributes).toContain("vocabularies");
+  expect(RDFDetailsView.observedAttributes).toContain("vocabularies");
 });
 
 test("setData stores quads", () => {
-  const viewer = new RDFViewer();
+  const viewer = new RDFDetailsView();
   viewer.setData(sampleTurtle, "turtle");
   expect(viewer.getQuads().length).toBeGreaterThan(0);
 });
 
 test("setConfig updates attributes", () => {
-  const viewer = new RDFViewer();
+  const viewer = new RDFDetailsView();
   viewer.setConfig({ showNamespaces: false, theme: "dark" });
   expect(viewer.getAttribute("show-namespaces")).toBe("false");
   expect(viewer.getAttribute("theme")).toBe("dark");
 });
 
 test("clear empties store", () => {
-  const viewer = new RDFViewer();
+  const viewer = new RDFDetailsView();
   viewer.setData(sampleTurtle, "turtle");
   viewer.clear();
   expect(viewer.getQuads().length).toBe(0);
 });
 
 test("handles malformed data", () => {
-  const viewer = new RDFViewer();
+  const viewer = new RDFDetailsView();
   expect(() => viewer.setData("<bad turtle", "turtle")).not.toThrow();
 });

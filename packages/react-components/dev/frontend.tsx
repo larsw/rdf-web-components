@@ -7,8 +7,8 @@ import {
   Paragraph,
   Switch,
 } from "@digdir/designsystemet-react";
-import type { RdfViewerProps } from "../src";
-import { RdfViewer } from "../src";
+import type { RdfDetailsViewProps } from "../src";
+import { RdfDetailsView } from "../src";
 import "@digdir/designsystemet-css";
 import "@digdir/designsystemet-css/theme";
 
@@ -233,7 +233,7 @@ ex:document3 dc:title "Linked Data Patterns"@en ;
 const sampleData = `${foafPersonData}\n${dublinCoreData}`;
 
 function App() {
-  const [colorScheme, setColorScheme] = useState<"light" | "dark">("light");
+  const [colorScheme, setColorScheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-color-scheme", colorScheme);
@@ -262,7 +262,7 @@ function App() {
             RDF React Components
           </Heading>
           <Paragraph data-size="md" style={{ marginTop: "0.5rem" }}>
-            Playground for the RdfViewer component using Designsystemet styles.
+            Playground for the RdfDetailsView component.
           </Paragraph>
         </div>
         <Switch
@@ -272,22 +272,24 @@ function App() {
             setColorScheme(event.currentTarget.checked ? "dark" : "light");
           }}
           position="end"
+          value={"dark"}
         />
       </div>
       <Card style={{ marginTop: "var(--ds-size-6)" }}>
         <CardBlock>
-          <RdfViewer {...viewerProps} theme={colorScheme} />
+          <RdfDetailsView {...viewerProps} theme={colorScheme} />
         </CardBlock>
       </Card>
     </div>
   );
 }
 
-const viewerProps: RdfViewerProps = {
+const viewerProps: RdfDetailsViewProps = {
   data: sampleData,
   preferredLanguages: ["en"],
   vocabularies: ["/vocab"],
   enableNavigation: true,
+  theme: "dark",
 };
 
 const root = createRoot(document.getElementById("app")!);

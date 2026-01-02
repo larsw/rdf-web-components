@@ -4,7 +4,7 @@ A collection of standards-compliant Web Components for working with RDF (Resourc
 
 ## Features
 
-- **RDF Viewer**: A web component that displays RDF data in a structured, readable format
+- **RDF Details View**: A web component that displays RDF data in a structured, readable format
 - **TypeScript Support**: Full TypeScript support with N3.js integration
 - **Multiple Formats**: Supports Turtle, N-Triples, N-Quads, and more
 - **Vocabulary Integration**: Load external vocabularies/ontologies for enhanced label display
@@ -39,10 +39,10 @@ This starts a development server at `http://localhost:3000` with hot module relo
 <!DOCTYPE html>
 <html>
   <head>
-    <script type="module" src="./rdf-viewer.js"></script>
+    <script type="module" src="./rdf-details-view.js"></script>
   </head>
   <body>
-    <rdf-viewer
+    <rdf-details-view
       format="turtle"
       layout="table"
       show-namespaces="true"
@@ -56,12 +56,12 @@ This starts a development server at `http://localhost:3000` with hot module relo
                   foaf:age 28 ;
                   foaf:depiction <https://example.org/alice.jpg> .'
     >
-    </rdf-viewer>
+    </rdf-details-view>
   </body>
 </html>
 ```
 
-## RDF Viewer Component
+## RDF Details View Component
 
 ### Attributes
 
@@ -79,7 +79,7 @@ This starts a development server at `http://localhost:3000` with hot module relo
 ### JavaScript API
 
 ```javascript
-const viewer = document.querySelector("rdf-viewer");
+const viewer = document.querySelector("rdf-details-view");
 
 // Set data programmatically
 viewer.setData(rdfData, "turtle");
@@ -139,11 +139,11 @@ bun test
 ### Project Structure
 
 ```
-├── rdf-viewer.ts       # Main RDF Viewer Web Component
+├── rdf-details-view.ts       # Main RDF Details View Web Component
 ├── frontend.ts         # Test page frontend code
 ├── index.html          # Test page HTML
 ├── index.ts            # Development server
-├── rdf-viewer.test.ts  # Tests
+├── rdf-details-view.test.ts  # Tests
 └── README.md           # This file
 ```
 
@@ -162,11 +162,11 @@ The test page includes several examples:
 Load external vocabularies to get human-readable labels for properties:
 
 ```html
-<rdf-viewer
+<rdf-details-view
   vocabularies="https://www.w3.org/2000/01/rdf-schema,http://www.w3.org/2004/02/skos/core"
   preferred-languages="en,de,fr"
 >
-</rdf-viewer>
+</rdf-details-view>
 ```
 
 The viewer will automatically use `rdfs:label`, `skos:prefLabel`, `skos:altLabel`, and Dublin Core titles from these vocabularies.

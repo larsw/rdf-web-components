@@ -12,13 +12,13 @@ bun add @sral/react-rdf-components
 
 ```tsx
 import "@digdir/designsystemet-css";
-import { RdfViewer } from "@sral/react-rdf-components";
+import { RdfDetailsView } from "@sral/react-rdf-components";
 
 const data = `@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 <http://example.org/alice> a foaf:Person ; foaf:name "Alice" .`;
 
 export function Example() {
-  return <RdfViewer data={data} format="turtle" layout="table" />;
+  return <RdfDetailsView data={data} format="turtle" layout="table" />;
 }
 ```
 
@@ -26,17 +26,17 @@ export function Example() {
 
 Light:
 
-![RdfViewer light](../../assets/react-components-light.png)
+![RdfDetailsView light](../../assets/react-components-light.png)
 
 Dark:
 
-![RdfViewer dark](../../assets/react-components-dark.png)
+![RdfDetailsView dark](../../assets/react-components-dark.png)
 
 ## Styles
 
 This library renders Designsystemet React components. Import the Designsystemet CSS in your app and load a theme from `@digdir/designsystemet-css/theme` or a custom theme generated from Designsystemet tokens.
 
-## RdfViewer Props
+## RdfDetailsView Props
 
 - `data` (string, required): RDF document content.
 - `format` (string): `turtle`, `n-triples`, `n-quads`, `trig`, `json-ld`.

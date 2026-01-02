@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RDF Viewer Web Component Test</title>
+    <title>RDF Details View Web Component Test</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
     <style>
         body {
@@ -84,7 +84,7 @@
             resize: vertical;
         }
         
-        .rdf-viewer {
+        .rdf-details-view {
             margin-top: 1rem;
         }
 
@@ -129,7 +129,7 @@
         }
     </script>
     <div class="container">
-        <h1>RDF Viewer Web Component Test</h1>
+        <h1>RDF Details View Web Component Test</h1>
         
         <div class="test-section" id="section-1" data-theme="light">
             <h2>Example 1: FOAF Person Data</h2>
@@ -185,7 +185,7 @@
                 </label>
                 <button onclick="updateViewer1()">Update</button>
             </div>
-            <rdf-viewer id="viewer1" 
+            <rdf-details-view id="viewer1" 
                         format="turtle" 
                         layout="table" 
                         show-namespaces="true"
@@ -246,7 +246,7 @@
                 </label>
                 <button onclick="updateViewer2()">Update</button>
             </div>
-            <rdf-viewer id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-viewer>
+            <rdf-details-view id="viewer2" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-details-view>
         </div>
         
         <div class="test-section" id="section-3" data-theme="light">
@@ -310,7 +310,7 @@ ex:person1 a foaf:Person ;
 ex:person2 a foaf:Person ;
     foaf:name "Jane Smith"@en ;
     foaf:nick "jane" .</textarea>
-            <rdf-viewer id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-viewer>
+            <rdf-details-view id="viewer3" format="turtle" layout="table" show-namespaces="true" expand-uris="false" theme="light" show-images-inline="false" enable-navigation="true" enable-content-negotiation="false"></rdf-details-view>
         </div>
     </div>
 

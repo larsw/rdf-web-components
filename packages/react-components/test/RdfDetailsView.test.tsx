@@ -4,7 +4,7 @@ import { act } from "react";
 import { render, screen } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import { createRoot } from "react-dom/client";
-import { RdfViewer } from "../src";
+import { RdfDetailsView } from "../src";
 
 const sampleData = `
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -27,7 +27,7 @@ ex:alice ex:knows ex:bob .
 ex:bob ex:name "Bob"@en .
 `;
 
-describe("RdfViewer", () => {
+describe("RdfDetailsView", () => {
   test("renders plain jsx", () => {
     render(<div>ok</div>);
     expect(screen.getByText("ok")).toBeInTheDocument();
@@ -46,19 +46,19 @@ describe("RdfViewer", () => {
   });
 
   test("renders namespace cards when enabled", () => {
-    render(<RdfViewer data={sampleData} showNamespaces />);
+    render(<RdfDetailsView data={sampleData} showNamespaces />);
     expect(screen.getByText("foaf")).toBeInTheDocument();
     expect(screen.getByText("exa")).toBeInTheDocument();
   });
 
   test("renders table rows with predicate labels", () => {
-    render(<RdfViewer data={sampleData} />);
+    render(<RdfDetailsView data={sampleData} />);
     expect(screen.getAllByText("name").length).toBeGreaterThan(0);
     expect(screen.getByText(/Alice/)).toBeInTheDocument();
   });
 
   test("renders turtle layout", () => {
-    render(<RdfViewer data={sampleData} layout="turtle" />);
+    render(<RdfDetailsView data={sampleData} layout="turtle" />);
     expect(screen.getByText(/@prefix foaf:/i)).toBeInTheDocument();
     expect(screen.getByText(/exa:alice foaf:name/)).toBeInTheDocument();
   });
@@ -75,7 +75,7 @@ foaf:mbox rdfs:label "email"@en .
       );
 
     render(
-      <RdfViewer
+      <RdfDetailsView
         data={sampleData}
         vocabularies={["http://example.org/foaf.ttl"]}
       />,
@@ -86,7 +86,7 @@ foaf:mbox rdfs:label "email"@en .
   });
 
   test("navigates to a referenced subject", () => {
-    render(<RdfViewer data={navigationData} enableNavigation />);
+    render(<RdfDetailsView data={navigationData} enableNavigation />);
     const navigateButton = screen.getByRole("button", {
       name: /Navigate to exa:bob/i,
     });

@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { RdfViewer } from "./components/RdfViewer";
-import type { LiteralRenderer, PredicateRenderer } from "./components/RdfViewer";
+import { RdfDetailsView } from "./components/RdfDetailsView";
+import type {
+  LiteralRenderer,
+  PredicateRenderer,
+} from "./components/RdfDetailsView";
 
-const meta: Meta<typeof RdfViewer> = {
-  title: "Components/RdfViewer",
-  component: RdfViewer,
+const meta: Meta<typeof RdfDetailsView> = {
+  title: "Components/RdfDetailsView",
+  component: RdfDetailsView,
   tags: ["autodocs"],
   args: {
     data: "",
@@ -18,7 +21,7 @@ const meta: Meta<typeof RdfViewer> = {
 
 export default meta;
 
-type Story = StoryObj<typeof RdfViewer>;
+type Story = StoryObj<typeof RdfDetailsView>;
 
 const foafPersonData = `
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .

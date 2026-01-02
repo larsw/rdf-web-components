@@ -6,7 +6,7 @@ import {
 
 const { namedNode } = DataFactory;
 
-export interface RDFViewerConfig {
+export interface RDFDetailsViewConfig {
   format?: "turtle" | "n-triples" | "n-quads" | "trig" | "json-ld";
   showNamespaces?: boolean;
   expandURIs?: boolean;
@@ -22,11 +22,11 @@ export interface RDFViewerConfig {
 /**
  * A Web Component for displaying RDF data in a structured, readable format
  */
-export class RDFViewer extends HTMLElement {
+export class RDFDetailsView extends HTMLElement {
   private store: Store;
   private vocabularyStore: Store;
   private parser: Parser;
-  private config: RDFViewerConfig;
+  private config: RDFDetailsViewConfig;
   private currentSubject: string | null = null;
   private loadedVocabularies: Set<string> = new Set();
   private contentTypeCache: Map<
@@ -92,7 +92,7 @@ export class RDFViewer extends HTMLElement {
   }
 
   private updateFromAttributes() {
-    const format = this.getAttribute("format") as RDFViewerConfig["format"];
+    const format = this.getAttribute("format") as RDFDetailsViewConfig["format"];
     if (format) this.config.format = format;
 
     const showNamespaces = this.getAttribute("show-namespaces");
@@ -102,10 +102,10 @@ export class RDFViewer extends HTMLElement {
     const expandURIs = this.getAttribute("expand-uris");
     if (expandURIs !== null) this.config.expandURIs = expandURIs === "true";
 
-    const theme = this.getAttribute("theme") as RDFViewerConfig["theme"];
+    const theme = this.getAttribute("theme") as RDFDetailsViewConfig["theme"];
     if (theme) this.config.theme = theme;
 
-    const layout = this.getAttribute("layout") as RDFViewerConfig["layout"];
+    const layout = this.getAttribute("layout") as RDFDetailsViewConfig["layout"];
     if (layout) this.config.layout = layout;
 
     const preferredLanguages = this.getAttribute("preferred-languages");
@@ -174,7 +174,7 @@ export class RDFViewer extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
-      <div class="rdf-viewer ${this.config.theme}${imageClass}">
+      <div class="rdf-details-view ${this.config.theme}${imageClass}">
         ${content}
       </div>
     `;
@@ -193,7 +193,7 @@ export class RDFViewer extends HTMLElement {
     const imageClass = this.config.showImagesInline ? "" : " images-disabled";
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
-      <div class="rdf-viewer ${this.config.theme}${imageClass}">
+      <div class="rdf-details-view ${this.config.theme}${imageClass}">
         <div class="error">
           <h3>Error parsing RDF data:</h3>
           <pre>${error.message}</pre>
@@ -429,7 +429,7 @@ export class RDFViewer extends HTMLElement {
 
   private getStyles(): string {
     return `
-      .rdf-viewer {
+      .rdf-details-view {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 14px;
         line-height: 1.5;
@@ -441,7 +441,7 @@ export class RDFViewer extends HTMLElement {
         overflow-x: auto;
       }
 
-      .rdf-viewer.dark {
+      .rdf-details-view.dark {
         background: #1e1e1e;
         color: #d4d4d4;
         border-color: #404040;
@@ -805,7 +805,7 @@ export class RDFViewer extends HTMLElement {
       }
 
       /* When images are disabled inline */
-      .rdf-viewer.images-disabled .resource-image {
+      .rdf-details-view.images-disabled .resource-image {
         display: none;
       }
 
@@ -879,14 +879,14 @@ export class RDFViewer extends HTMLElement {
   }
 
   // Public API methods
-  public setData(data: string, format?: RDFViewerConfig["format"]) {
+  public setData(data: string, format?: RDFDetailsViewConfig["format"]) {
     this.setAttribute("data", data);
     if (format) {
       this.setAttribute("format", format);
     }
   }
 
-  public setConfig(config: Partial<RDFViewerConfig>) {
+  public setConfig(config: Partial<RDFDetailsViewConfig>) {
     Object.assign(this.config, config);
 
     // Update attributes to reflect config changes
@@ -1411,6 +1411,6 @@ export class RDFViewer extends HTMLElement {
 }
 
 // Register the custom element
-if (!customElements.get("rdf-viewer")) {
-  customElements.define("rdf-viewer", RDFViewer);
+if (!customElements.get("rdf-details-view")) {
+  customElements.define("rdf-details-view", RDFDetailsView);
 }

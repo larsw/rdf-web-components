@@ -1,6 +1,6 @@
-export { RdfViewer } from "./components/RdfViewer";
+export { RdfDetailsView } from "./components/RdfDetailsView";
 export type {
   LiteralRenderer,
   PredicateRenderer,
-  RdfViewerProps,
-} from "./components/RdfViewer";
+  RdfDetailsViewProps,
+} from "./components/RdfDetailsView";

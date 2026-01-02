@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Literal, type Quad } from "n3";
 import {
   Alert,
@@ -11,7 +18,7 @@ import {
   Paragraph,
   Table,
 } from "@digdir/designsystemet-react";
-import "./rdf-viewer.css";
+import "./rdf-details-view.css";
 import {
   extractNamespacesFromQuads,
   parseRdf,
@@ -50,7 +57,7 @@ export type PredicateRenderer = (args: {
   defaultRender: () => ReactNode;
 }) => ReactNode;
 
-export interface RdfViewerProps {
+export interface RdfDetailsViewProps {
   data: string;
   format?: RDFFormat;
   layout?: "table" | "turtle";
@@ -69,7 +76,7 @@ export interface RdfViewerProps {
   className?: string;
 }
 
-export function RdfViewer({
+export function RdfDetailsView({
   data,
   format = "turtle",
   layout = "table",
@@ -86,7 +93,7 @@ export function RdfViewer({
   literalRenderers,
   predicateRenderers,
   className,
-}: RdfViewerProps) {
+}: RdfDetailsViewProps) {
   const [error, setError] = useState<Error | null>(null);
   const [vocabularyQuads, setVocabularyQuads] = useState<Quad[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -202,7 +209,7 @@ export function RdfViewer({
   if (error) {
     return (
       <div
-        className={`rdf-viewer ${className ?? ""}`.trim()}
+        className={`rdf-details-view ${className ?? ""}`.trim()}
         data-theme={theme}
         data-color-scheme={theme}
       >
@@ -219,7 +226,7 @@ export function RdfViewer({
   if (quads.length === 0) {
     return (
       <div
-        className={`rdf-viewer ${className ?? ""}`.trim()}
+        className={`rdf-details-view ${className ?? ""}`.trim()}
         data-theme={theme}
         data-color-scheme={theme}
       >
@@ -230,7 +237,7 @@ export function RdfViewer({
     );
   }
 
-  const viewerClass = ["rdf-viewer", className].filter(Boolean).join(" ");
+  const viewerClass = ["rdf-details-view", className].filter(Boolean).join(" ");
 
   return (
     <div
@@ -326,6 +333,14 @@ function renderTableLayout(
         ([subject]) => subject === options.selectedSubject,
       )
     : Array.from(subjects.entries());
+  const predicateColumnWidth = computePredicateColumnWidth(
+    visibleSubjects,
+    namespaces,
+    options,
+  );
+  const tableStyle = {
+    "--rdf-details-view-predicate-width": predicateColumnWidth,
+  } as CSSProperties;
 
   return visibleSubjects.map(([subject, predicates]) => (
     <Card key={subject}>
@@ -333,12 +348,12 @@ function renderTableLayout(
         <Heading level={3} data-size="sm">
           {formatTerm(subject, namespaces, options.expandUris)}
         </Heading>
-        <Table border zebra>
+        <Table border zebra className="properties-table" style={tableStyle}>
           <Table.Body>
             {Array.from(predicates.entries()).map(
               ([predicate, predicateQuads]) => (
                 <Table.Row key={`${subject}-${predicate}`}>
-                  <Table.HeaderCell>
+                  <Table.HeaderCell className="predicate-cell">
                     {renderPredicateLabel(
                       predicate,
                       namespaces,
@@ -364,6 +379,33 @@ function renderTableLayout(
       </CardBlock>
     </Card>
   ));
+}
+
+function computePredicateColumnWidth(
+  subjects: [string, Map<string, Quad[]>][],
+  namespaces: NamespaceMap,
+  options: {
+    expandUris: boolean;
+    labelMap: Map<string, string>;
+  },
+) {
+  let maxLength = 0;
+  for (const [, predicates] of subjects) {
+    for (const predicate of predicates.keys()) {
+      const display = formatPredicate(
+        predicate,
+        namespaces,
+        options.expandUris,
+        options.labelMap,
+      );
+      maxLength = Math.max(maxLength, display.length);
+    }
+  }
+
+  const minWidth = 14;
+  const maxWidth = 28;
+  const clamped = Math.min(Math.max(maxLength, minWidth), maxWidth);
+  return `${clamped}ch`;
 }
 
 function renderObjectValue(

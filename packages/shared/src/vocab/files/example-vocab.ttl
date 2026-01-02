@@ -1,7 +1,15 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
-@prefix ex: <http://example.org/> .
+@prefix ex: <http://example.org/vocab#> .
+
+ex: a rdfs:Ontology ;
+    rdfs:label "Example Vocabulary"@en ;
+    rdfs:label "Vocabulaire d'Exemple"@fr ;
+    rdfs:label "Beispiel-Vokabular"@de ;
+    rdfs:comment "An example vocabulary for demonstration purposes."@en ;
+    rdfs:comment "Un vocabulaire d'exemple à des fins de démonstration."@fr ;
+    rdfs:comment "Ein Beispiel-Vokabular zu Demonstrationszwecken."@de .
 
 # FOAF vocabulary labels
 foaf:Person rdfs:label "Person"@en ;

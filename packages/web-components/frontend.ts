@@ -482,7 +482,7 @@ function setupControls() {
 
 // Initialize the page when DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
-  await import("./rdf-viewer.ts");
+  await import("./rdf-details-view.ts");
   // Set up the sample data for viewers
   const viewer1 = document.getElementById("viewer1") as any;
   const viewer2 = document.getElementById("viewer2") as any;
@@ -506,7 +506,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Set up event listeners
   setupControls();
 
-  console.log("RDF Viewer test page initialized (small test data by default)");
+  console.log(
+    "RDF Details View test page initialized (small test data by default)",
+  );
 });
 
 // Export for debugging

@@ -5,23 +5,23 @@ Web components for rendering RDF data in the browser.
 ## Usage
 
 ```html
-<script type="module" src="/rdf-viewer.js"></script>
+<script type="module" src="/rdf-details-view.js"></script>
 
-<rdf-viewer
+<rdf-details-view
   data="@prefix ex: <http://example.org/> . ex:alice ex:name \"Alice\" ."
   format="turtle"
   layout="table"
   show-namespaces
   enable-navigation
-></rdf-viewer>
+></rdf-details-view>
 ```
 
 ## Screenshots
 
 Light:
 
-![RdfViewer light](../../assets/web-components-light.png)
+![RdfDetailsView light](../../assets/web-components-light.png)
 
 Dark:
 
-![RdfViewer dark](../../assets/web-components-dark.png)
+![RdfDetailsView dark](../../assets/web-components-dark.png)
