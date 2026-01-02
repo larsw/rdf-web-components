@@ -241,8 +241,22 @@ function App() {
   }, [colorScheme]);
 
   return (
-    <div style={{ margin: "2rem auto", maxWidth: "960px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+    <div
+      style={{
+        margin: "var(--ds-size-7) auto",
+        maxWidth: "52rem",
+        paddingInline: "var(--ds-size-5)",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "var(--ds-size-4)",
+        }}
+      >
         <div style={{ flex: 1 }}>
           <Heading level={1} data-size="lg">
             RDF React Components
@@ -260,7 +274,7 @@ function App() {
           position="end"
         />
       </div>
-      <Card style={{ marginTop: "1.5rem" }}>
+      <Card style={{ marginTop: "var(--ds-size-6)" }}>
         <CardBlock>
           <RdfViewer {...viewerProps} theme={colorScheme} />
         </CardBlock>
