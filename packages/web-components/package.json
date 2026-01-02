@@ -1,8 +1,19 @@
 {
   "name": "@sral/rdf-web-components",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "license": "MIT",
   "type": "module",
   "module": "index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/larsw/rdf-web-components",
+    "directory": "packages/web-components"
+  },
+  "author": {
+    "name": "larsw",
+    "email": "lars@lars-backwards.org",
+    "url": "https://github.com/larsw"
+  },
   "publishConfig": {
     "access": "public"
   },

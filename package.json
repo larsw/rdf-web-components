@@ -5,6 +5,16 @@
   "workspaces": [
     "packages/*"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/larsw/rdf-web-components"
+  },
+  "author": {
+    "name": "larsw",
+    "email": "lars@lars-backwards.org",
+    "url": "https://github.com/larsw"
+  },
+  "license": "MIT",
   "scripts": {
     "build": "bun run --filter @sral/rdf-web-components build && bun run --filter @sral/react-rdf-components build",
     "dev": "bun run --filter @sral/rdf-web-components dev",

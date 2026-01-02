@@ -10,10 +10,10 @@
     },
     "packages/react-components": {
       "name": "@sral/react-rdf-components",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@digdir/designsystemet-react": "1.9.0",
-        "@sral/rdf-components-shared": "0.1.0",
+        "@sral/rdf-components-shared": "0.1.1",
         "react": "19.2.1",
         "react-dom": "19.2.1",
       },
@@ -35,7 +35,7 @@
     },
     "packages/shared": {
       "name": "@sral/rdf-components-shared",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "n3": "1.26.0",
       },
@@ -46,7 +46,7 @@
     },
     "packages/web-components": {
       "name": "@sral/rdf-web-components",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@sral/rdf-components-shared": "workspace:*",
         "n3": "1.26.0",
