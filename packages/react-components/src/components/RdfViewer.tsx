@@ -282,14 +282,6 @@ function renderNamespaceList(namespaces: NamespaceMap) {
         </Heading>
         <List.Unordered
           className="namespace-list"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "0.5rem",
-            listStyle: "none",
-            padding: 0,
-            margin: "0.75rem 0 0",
-          }}
         >
           {Array.from(
             namespaces.entries() as IterableIterator<[string, string]>,
@@ -872,7 +864,11 @@ function selectPreferredLabel(
   }
 
   const noLang = labels.find((label) => !label.lang);
-  return noLang?.value ?? labels[0].value;
+  const first = labels[0];
+  if (!first) {
+    return undefined;
+  }
+  return noLang?.value ?? first.value;
 }
 
 function formatPredicate(
