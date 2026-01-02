@@ -6,11 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --filter @rdf-web-components/web-components dev",
     "build": "bun run --filter @rdf-web-components/web-components build && bun run --filter @sral/react-rdf-components build",
-    "test": "bun run --filter @rdf-web-components/shared test && bun run --filter @rdf-web-components/web-components test && bun run --filter @sral/react-rdf-components test",
+    "dev": "bun run --filter @rdf-web-components/web-components dev",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "lint": "prettier --check \"**/*.{ts,tsx,md}\""
+    "lint": "prettier --check \"**/*.{ts,tsx,md}\"",
+    "test": "bun run --filter @rdf-web-components/shared test && bun run --filter @rdf-web-components/web-components test && bun run --filter @sral/react-rdf-components test"
   },
   "devDependencies": {
     "prettier": "3.6.2",
