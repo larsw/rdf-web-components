@@ -61,6 +61,34 @@
   border: 1px solid var(--ds-color-neutral-border-subtle);
 }
 
+.rdf-details-view .image-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rdf-details-view .image-carousel-image {
+  max-width: 320px;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.rdf-details-view .image-carousel-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rdf-details-view .image-carousel-count {
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: 0.85em;
+}
+
+.rdf-details-view .image-carousel-link {
+  flex-basis: 100%;
+}
+
 .rdf-details-view .properties-table {
   table-layout: fixed;
   width: 100%;

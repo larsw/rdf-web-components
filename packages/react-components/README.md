@@ -48,6 +48,9 @@ This library renders Designsystemet React components. Import the Designsystemet 
 - `showLanguageTags` (boolean): Show language tags for literals.
 - `theme` (string): `light` or `dark`.
 - `showImagesInline` (boolean): Inline image rendering.
+- `imagePredicates` (string[]): Predicate IRIs treated as images for inline previews.
+- `showImageUrls` (boolean): Show image URLs below inline images.
+- `predicateOrder` (string[]): Predicate IRIs to order first in the table layout.
 - `vocabularies` (string[]): Vocabulary URLs to resolve human-friendly labels.
 - `enableNavigation` (boolean): Allow navigating between subject nodes.
 - `enableContentNegotiation` (boolean): Detect resource types (images, HTML, RDF).

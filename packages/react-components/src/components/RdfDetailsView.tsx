@@ -68,6 +68,9 @@ export interface RdfDetailsViewProps {
   showLanguageTags?: boolean;
   theme?: "light" | "dark";
   showImagesInline?: boolean;
+  showImageUrls?: boolean;
+  imagePredicates?: string[];
+  predicateOrder?: string[];
   vocabularies?: string[];
   enableNavigation?: boolean;
   enableContentNegotiation?: boolean;
@@ -75,6 +78,17 @@ export interface RdfDetailsViewProps {
   predicateRenderers?: Record<string, PredicateRenderer>;
   className?: string;
 }
+
+const DEFAULT_IMAGE_PREDICATES = [
+  "http://schema.org/image",
+  "http://schema.org/thumbnailUrl",
+  "http://schema.org/contentUrl",
+  "http://schema.org/logo",
+  "http://schema.org/photo",
+  "http://xmlns.com/foaf/0.1/depiction",
+  "http://xmlns.com/foaf/0.1/img",
+  "http://xmlns.com/foaf/0.1/thumbnail",
+];
 
 export function RdfDetailsView({
   data,
@@ -87,6 +101,9 @@ export function RdfDetailsView({
   showLanguageTags = true,
   theme,
   showImagesInline = true,
+  showImageUrls = false,
+  imagePredicates,
+  predicateOrder,
   vocabularies,
   enableNavigation = true,
   enableContentNegotiation = false,
@@ -124,6 +141,16 @@ export function RdfDetailsView({
   const normalizedVocabularies = useMemo(
     () => vocabularies?.map((vocab) => vocab.trim()).filter(Boolean) ?? [],
     [vocabularies],
+  );
+  const imagePredicateSet = useMemo(() => {
+    const values =
+      imagePredicates?.map((predicate) => predicate.trim()).filter(Boolean) ??
+      DEFAULT_IMAGE_PREDICATES;
+    return new Set(values);
+  }, [imagePredicates]);
+  const normalizedPredicateOrder = useMemo(
+    () => predicateOrder?.map((predicate) => predicate.trim()).filter(Boolean) ?? [],
+    [predicateOrder],
   );
 
   useEffect(() => {
@@ -262,6 +289,9 @@ export function RdfDetailsView({
             showDatatypes,
             showLanguageTags,
             showImagesInline,
+            showImageUrls,
+            imagePredicateSet,
+            predicateOrder: normalizedPredicateOrder,
             labelMap,
             enableNavigation,
             selectedSubject,
@@ -315,6 +345,7 @@ function renderTableLayout(
     expandUris: boolean;
     preferredLanguages: string[];
     showImagesInline: boolean;
+    showImageUrls: boolean;
     labelMap: Map<string, string>;
     enableNavigation: boolean;
     selectedSubject: string | null;
@@ -326,6 +357,8 @@ function renderTableLayout(
     showLanguageTags: boolean;
     literalRenderers?: Record<string, LiteralRenderer>;
     predicateRenderers?: Record<string, PredicateRenderer>;
+    imagePredicateSet: Set<string>;
+    predicateOrder: string[];
   },
 ) {
   const visibleSubjects = options.selectedSubject
@@ -341,6 +374,9 @@ function renderTableLayout(
   const tableStyle = {
     "--rdf-details-view-predicate-width": predicateColumnWidth,
   } as CSSProperties;
+  const predicateOrderMap = new Map(
+    options.predicateOrder.map((predicate, index) => [predicate, index]),
+  );
 
   return visibleSubjects.map(([subject, predicates]) => (
     <Card key={subject}>
@@ -350,8 +386,28 @@ function renderTableLayout(
         </Heading>
         <Table border zebra className="properties-table" style={tableStyle}>
           <Table.Body>
-            {Array.from(predicates.entries()).map(
-              ([predicate, predicateQuads]) => (
+            {Array.from(predicates.entries())
+              .map(([predicate, predicateQuads], originalIndex) => ({
+                predicate,
+                predicateQuads,
+                originalIndex,
+                orderIndex: predicateOrderMap.get(predicate),
+              }))
+              .sort((a, b) => {
+                const aExplicit = a.orderIndex != null;
+                const bExplicit = b.orderIndex != null;
+                if (aExplicit && bExplicit) {
+                  return a.orderIndex! - b.orderIndex!;
+                }
+                if (aExplicit) {
+                  return -1;
+                }
+                if (bExplicit) {
+                  return 1;
+                }
+                return a.originalIndex - b.originalIndex;
+              })
+              .map(({ predicate, predicateQuads }) => (
                 <Table.Row key={`${subject}-${predicate}`}>
                   <Table.HeaderCell className="predicate-cell">
                     {renderPredicateLabel(
@@ -363,17 +419,10 @@ function renderTableLayout(
                     )}
                   </Table.HeaderCell>
                   <Table.Cell>
-                    {predicateQuads.map((quad, idx) => (
-                      <div
-                        key={`${quad.subject.value}-${quad.predicate.value}-${idx}`}
-                      >
-                        {renderObjectValue(quad, namespaces, options)}
-                      </div>
-                    ))}
+                    {renderPredicateObjects(predicateQuads, namespaces, options)}
                   </Table.Cell>
                 </Table.Row>
-              ),
-            )}
+              ))}
           </Table.Body>
         </Table>
       </CardBlock>
@@ -408,6 +457,99 @@ function computePredicateColumnWidth(
   return `${clamped}ch`;
 }
 
+function renderPredicateObjects(
+  predicateQuads: Quad[],
+  namespaces: NamespaceMap,
+  options: {
+    expandUris: boolean;
+    preferredLanguages: string[];
+    showDatatypes: boolean;
+    showLanguageTags: boolean;
+    showImagesInline: boolean;
+    showImageUrls: boolean;
+    enableNavigation: boolean;
+    onNavigate: (subject: string | null) => void;
+    subjects: string[];
+    contentTypeCache: Map<string, ContentTypeHint>;
+    literalRenderers?: Record<string, LiteralRenderer>;
+    predicateRenderers?: Record<string, PredicateRenderer>;
+    imagePredicateSet: Set<string>;
+  },
+) {
+  const imageQuads = predicateQuads.filter((quad) =>
+    isImageQuad(quad, options),
+  );
+  const otherQuads = predicateQuads.filter((quad) => !isImageQuad(quad, options));
+
+  const content: ReactNode[] = [];
+
+  if (options.showImagesInline && imageQuads.length > 1) {
+    const imageUris = imageQuads
+      .map((quad) =>
+        quad.object.termType === "NamedNode" ? quad.object.value : null,
+      )
+      .filter((uri): uri is string => Boolean(uri));
+
+    if (imageUris.length) {
+      content.push(
+        <ImageCarousel
+          key={`carousel-${imageUris.join("|")}`}
+          images={imageUris}
+          renderLink={(uri) =>
+            renderUriLink(uri, namespaces, {
+              expandUris: options.expandUris,
+              enableNavigation: options.enableNavigation,
+              onNavigate: options.onNavigate,
+              subjects: options.subjects,
+              contentTypeCache: options.contentTypeCache,
+            })
+          }
+          showImageUrls={options.showImageUrls}
+        />,
+      );
+    }
+  } else {
+    imageQuads.forEach((quad, idx) => {
+      content.push(
+        <div key={`${quad.subject.value}-${quad.predicate.value}-img-${idx}`}>
+          {renderObjectValue(quad, namespaces, options)}
+        </div>,
+      );
+    });
+  }
+
+  otherQuads.forEach((quad, idx) => {
+    content.push(
+      <div key={`${quad.subject.value}-${quad.predicate.value}-other-${idx}`}>
+        {renderObjectValue(quad, namespaces, options)}
+      </div>,
+    );
+  });
+
+  return content.length ? content : null;
+}
+
+function isImageQuad(
+  quad: Quad,
+  options: {
+    showImagesInline: boolean;
+    imagePredicateSet: Set<string>;
+    contentTypeCache: Map<string, ContentTypeHint>;
+  },
+) {
+  if (!options.showImagesInline) {
+    return false;
+  }
+  if (quad.object.termType !== "NamedNode") {
+    return false;
+  }
+  const uri = quad.object.value;
+  const predicateMatch = options.imagePredicateSet.has(quad.predicate.value);
+  const contentHint = options.contentTypeCache.get(uri);
+  const extensionMatch = /\.(png|jpe?g|gif|webp|svg)$/i.test(uri);
+  return predicateMatch || (contentHint?.isImage ?? false) || extensionMatch;
+}
+
 function renderObjectValue(
   quad: Quad,
   namespaces: NamespaceMap,
@@ -423,6 +565,8 @@ function renderObjectValue(
     contentTypeCache: Map<string, ContentTypeHint>;
     literalRenderers?: Record<string, LiteralRenderer>;
     predicateRenderers?: Record<string, PredicateRenderer>;
+    imagePredicateSet: Set<string>;
+    showImageUrls: boolean;
   },
 ) {
   const defaultRender = () => {
@@ -744,12 +888,11 @@ function classifyLiteral(value: string, datatype?: string) {
   return { kind: "text" };
 }
 
-function renderUriValue(
+function renderUriLink(
   uri: string,
   namespaces: NamespaceMap,
   options: {
     expandUris: boolean;
-    showImagesInline: boolean;
     enableNavigation: boolean;
     onNavigate: (subject: string | null) => void;
     subjects: string[];
@@ -758,9 +901,6 @@ function renderUriValue(
 ) {
   const displayValue = formatTerm(uri, namespaces, options.expandUris);
   const contentHint = options.contentTypeCache.get(uri);
-  const isImage =
-    (contentHint?.isImage ?? false) ||
-    (options.showImagesInline && /\.(png|jpe?g|gif|webp|svg)$/i.test(uri));
   const isNavigable =
     options.enableNavigation && options.subjects.includes(uri);
 
@@ -816,25 +956,118 @@ function renderUriValue(
     </Link>
   );
 
+  return link;
+}
+
+function renderUriValue(
+  uri: string,
+  namespaces: NamespaceMap,
+  options: {
+    expandUris: boolean;
+    showImagesInline: boolean;
+    enableNavigation: boolean;
+    onNavigate: (subject: string | null) => void;
+    subjects: string[];
+    contentTypeCache: Map<string, ContentTypeHint>;
+  },
+) {
+  const contentHint = options.contentTypeCache.get(uri);
+  const isImage =
+    (contentHint?.isImage ?? false) ||
+    (options.showImagesInline && /\.(png|jpe?g|gif|webp|svg)$/i.test(uri));
+  const link = renderUriLink(uri, namespaces, options);
+  const displayValue = formatTerm(uri, namespaces, options.expandUris);
+
   return (
     <span className="resource">
-      {link}
       {isImage ? (
-        <img
-          src={uri}
-          alt={displayValue}
-          className="resource-image"
-          style={{
-            display: "block",
-            marginTop: "0.5rem",
-            borderRadius: "6px",
-            maxWidth: "220px",
-            maxHeight: "160px",
-            objectFit: "cover",
-          }}
-        />
-      ) : null}
+        <>
+          <Link href={uri} target="_blank" rel="noreferrer">
+            <img
+              src={uri}
+              alt={displayValue}
+              className="resource-image"
+              style={{
+                display: "block",
+                marginTop: "0.5rem",
+                borderRadius: "6px",
+                maxWidth: "220px",
+                maxHeight: "160px",
+                objectFit: "cover",
+              }}
+            />
+          </Link>
+          {options.showImageUrls ? (
+            <div className="image-carousel-link">{link}</div>
+          ) : null}
+        </>
+      ) : (
+        link
+      )}
     </span>
+  );
+}
+
+function ImageCarousel({
+  images,
+  renderLink,
+  showImageUrls,
+}: {
+  images: string[];
+  renderLink: (uri: string) => ReactNode;
+  showImageUrls: boolean;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const total = images.length;
+  const currentIndex = total ? activeIndex % total : 0;
+  const current = images[currentIndex] ?? images[0];
+
+  if (!current) {
+    return null;
+  }
+
+  const goPrev = () => {
+    setActiveIndex((prev) => (prev - 1 + total) % total);
+  };
+
+  const goNext = () => {
+    setActiveIndex((prev) => (prev + 1) % total);
+  };
+
+  return (
+    <div className="image-carousel">
+      <a href={current} target="_blank" rel="noreferrer">
+        <img
+          src={current}
+          alt=""
+          className="resource-image image-carousel-image"
+        />
+      </a>
+      <div className="image-carousel-controls">
+        <Button
+          variant="tertiary"
+          onClick={goPrev}
+          disabled={total <= 1}
+          aria-label="Previous image"
+        >
+          Prev
+        </Button>
+        <span className="image-carousel-count">
+          {currentIndex + 1} / {total}
+        </span>
+        <Button
+          variant="tertiary"
+          onClick={goNext}
+          disabled={total <= 1}
+          aria-label="Next image"
+        >
+          Next
+        </Button>
+        {showImageUrls ? (
+          <div className="image-carousel-link">{renderLink(current)}</div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

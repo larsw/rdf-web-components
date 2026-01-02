@@ -27,6 +27,23 @@ ex:alice ex:knows ex:bob .
 ex:bob ex:name "Bob"@en .
 `;
 
+const orderedData = `
+@prefix ex: <http://example.org/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+ex:alice foaf:name "Alice" ;
+  ex:score 42 ;
+  ex:role "Owner" .
+`;
+
+const imageData = `
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ex: <http://example.org/> .
+
+ex:alice foaf:depiction <https://picsum.photos/200/200?random=1> ;
+  foaf:depiction <https://picsum.photos/200/200?random=2> .
+`;
+
 describe("RdfDetailsView", () => {
   test("renders plain jsx", () => {
     render(<div>ok</div>);
@@ -93,5 +110,30 @@ foaf:mbox rdfs:label "email"@en .
     fireEvent.click(navigateButton);
     expect(screen.getByText(/Viewing:/)).toBeInTheDocument();
     expect(screen.getAllByText(/exa:bob/i).length).toBeGreaterThan(0);
+  });
+
+  test("renders an image carousel for multiple image objects", () => {
+    render(<RdfDetailsView data={imageData} />);
+    expect(
+      screen.getByRole("button", { name: "Previous image" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Next image" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+  });
+
+  test("orders predicates based on predicateOrder", () => {
+    render(
+      <RdfDetailsView
+        data={orderedData}
+        predicateOrder={["http://example.org/role", "http://example.org/score"]}
+      />,
+    );
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((node) => node.textContent);
+    expect(headers[0]).toBe("exa:role");
+    expect(headers[1]).toBe("exa:score");
   });
 });
