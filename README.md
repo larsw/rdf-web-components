@@ -1,6 +1,11 @@
 # RDF Web Components
 
-A collection of standards-compliant Web Components for working with RDF (Resource Description Framework) data.
+Monorepo with two primary packages for working with RDF (Resource Description Framework) data:
+
+- **@sral/rdf-web-components** – Standards-compliant custom elements (no framework required).
+- **@sral/react-rdf-components** – React-friendly components built on the same rendering logic.
+
+Shared parsing/label utilities live in **@sral/rdf-components-shared**.
 
 ## Features
 
@@ -19,21 +24,13 @@ A collection of standards-compliant Web Components for working with RDF (Resourc
 
 ## Quick Start
 
-### Installation
+### Install (repo root)
 
 ```bash
 bun install
 ```
 
-### Running the Development Server
-
-```bash
-bun --hot ./index.ts
-```
-
-This starts a development server at `http://localhost:3000` with hot module reloading and a test page.
-
-### Basic Usage
+### Use the Web Component (@sral/rdf-web-components)
 
 ```html
 <!DOCTYPE html>
@@ -59,6 +56,33 @@ This starts a development server at `http://localhost:3000` with hot module relo
   </body>
 </html>
 ```
+
+### Use the React Component (@sral/react-rdf-components)
+
+```tsx
+import { RdfDetailsView } from "@sral/react-rdf-components";
+
+export function Example() {
+  return (
+    <RdfDetailsView
+      data={`@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+        <http://example.org/alice> a foaf:Person ;
+          foaf:name "Alice"@en ;
+          foaf:mbox <mailto:alice@example.org> .`}
+      showNamespaces
+      preferredLanguages={["en"]}
+    />
+  );
+}
+```
+
+### Running the Development Server
+
+```bash
+bun --hot ./index.ts
+```
+
+This starts a development server at `http://localhost:3000` with hot module reloading and a test page.
 
 ## RDF Details View Component
 
