@@ -130,4 +130,86 @@ foaf:mbox rdfs:label "email"@en .
     expect(headers[0]).toBe("exa:role");
     expect(headers[1]).toBe("exa:score");
   });
+
+  test("shows error state for invalid data", () => {
+    render(<RdfDetailsView data="<bad" />);
+    expect(screen.getByText(/Failed to parse RDF data/i)).toBeInTheDocument();
+  });
+
+  test("shows empty state when there is no data", () => {
+    render(<RdfDetailsView data="" />);
+    expect(screen.getByText(/No RDF data to display/i)).toBeInTheDocument();
+  });
+
+  test("uses custom literal and predicate renderers", () => {
+    const data = `@prefix ex: <http://example.org/> .
+ex:alice ex:score "99"^^<http://example.org/custom> .`;
+
+    const literalRenderers = {
+      "http://example.org/custom": ({ literal }: any) => (
+        <span data-testid="custom-literal">custom-{literal.value}</span>
+      ),
+    };
+
+    const predicateRenderers = {
+      "http://example.org/score": ({ defaultRender }: any) => (
+        <div data-testid="custom-predicate">{defaultRender()}</div>
+      ),
+    };
+
+    render(
+      <RdfDetailsView
+        data={data}
+        literalRenderers={literalRenderers}
+        predicateRenderers={predicateRenderers}
+      />,
+    );
+
+    expect(screen.getByTestId("custom-literal").textContent).toBe("custom-99");
+    expect(screen.getByTestId("custom-predicate")).toBeInTheDocument();
+  });
+
+  test("shows content negotiation hints when enabled", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (_input: RequestInfo, init?: RequestInit) => {
+      if (init?.method === "HEAD") {
+        return new Response(null, {
+          status: 200,
+          headers: { "content-type": "application/ld+json" },
+        });
+      }
+      return new Response("", { status: 404 });
+    };
+
+    const data = `@prefix ex: <http://example.org/> .
+ex:alice ex:pic <http://example.org/pic.jpg> .`;
+
+    render(
+      <RdfDetailsView
+        data={data}
+        enableContentNegotiation
+        showNamespaces
+        showImagesInline={false}
+      />,
+    );
+
+    expect(await screen.findByText(/application\/ld\+json/i)).toBeInTheDocument();
+
+    globalThis.fetch = originalFetch;
+  });
+
+  test("renders image carousel links when showImageUrls is enabled", () => {
+    render(
+      <RdfDetailsView
+        data={imageData}
+        showImageUrls
+        showImagesInline
+        enableNavigation={false}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Previous image" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Next image" })).toBeEnabled();
+    expect(screen.getByRole("link", { name: /pic:200\?random=1/i })).toBeInTheDocument();
+  });
 });

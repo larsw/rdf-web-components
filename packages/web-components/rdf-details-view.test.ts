@@ -1,77 +1,5 @@
 import { expect, test } from "bun:test";
 
-class MockHTMLElement {
-  private attributes = new Map<string, string>();
-  shadowRoot = { innerHTML: "" };
-
-  static get observedAttributes() {
-    return [
-      "data",
-      "format",
-      "show-namespaces",
-      "expand-uris",
-      "theme",
-      "layout",
-      "preferred-languages",
-      "vocabularies",
-      "show-images-inline",
-      "enable-navigation",
-      "enable-content-negotiation",
-    ];
-  }
-
-  getAttribute(name: string) {
-    return this.attributes.get(name) ?? null;
-  }
-
-  setAttribute(name: string, value: string) {
-    const oldValue = this.attributes.get(name) ?? null;
-    this.attributes.set(name, value);
-    if (typeof (this as any).attributeChangedCallback === "function") {
-      (this as any).attributeChangedCallback(name, oldValue, value);
-    }
-  }
-
-  attachShadow() {
-    return this.shadowRoot;
-  }
-
-  connectedCallback() {}
-  attributeChangedCallback() {}
-}
-
-const registry = new Map<string, any>();
-
-(globalThis as any).HTMLElement = MockHTMLElement;
-
-(globalThis as any).customElements = {
-  define(name: string, ctor: any) {
-    if (!registry.has(name)) {
-      registry.set(name, ctor);
-    }
-  },
-  get(name: string) {
-    return registry.get(name) ?? null;
-  },
-};
-
-(globalThis as any).document = {
-  createElement() {
-    return {
-      innerHTML: "",
-      textContent: "",
-      attachShadow: () => ({ innerHTML: "" }),
-    };
-  },
-};
-
-(globalThis as any).requestAnimationFrame ??= (cb: FrameRequestCallback) => {
-  cb(0);
-  return 0;
-};
-
-(globalThis as any).cancelAnimationFrame ??= () => {};
-
 const { RDFDetailsView } = await import("./rdf-details-view.ts");
 
 const sampleTurtle = `
@@ -84,7 +12,7 @@ ex:alice a foaf:Person ;
 `;
 
 test("defines the custom element", () => {
-  expect(registry.get("rdf-details-view")).toBeDefined();
+  expect(customElements.get("rdf-details-view")).toBeDefined();
 });
 
 test("instantiates and renders", () => {
