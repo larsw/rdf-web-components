@@ -9,9 +9,16 @@
         "typescript": "5.9.2",
       },
     },
+    "packages/rdfa-components": {
+      "name": "@sral/rdfa-components",
+      "version": "0.1.2-pre1",
+      "devDependencies": {
+        "@types/bun": "1.2.19",
+      },
+    },
     "packages/react-components": {
       "name": "@sral/react-rdf-components",
-      "version": "0.1.1",
+      "version": "0.1.2-pre1",
       "dependencies": {
         "@digdir/designsystemet-react": "1.9.0",
         "@sral/rdf-components-shared": "0.1.1",
@@ -36,7 +43,7 @@
     },
     "packages/shared": {
       "name": "@sral/rdf-components-shared",
-      "version": "0.1.1",
+      "version": "0.1.2-pre1",
       "dependencies": {
         "n3": "1.26.0",
       },
@@ -47,7 +54,7 @@
     },
     "packages/web-components": {
       "name": "@sral/rdf-web-components",
-      "version": "0.1.1",
+      "version": "0.1.2-pre1",
       "dependencies": {
         "@sral/rdf-components-shared": "workspace:*",
         "n3": "1.26.0",
@@ -243,6 +250,8 @@
     "@sral/rdf-components-shared": ["@sral/rdf-components-shared@workspace:packages/shared"],
 
     "@sral/rdf-web-components": ["@sral/rdf-web-components@workspace:packages/web-components"],
+
+    "@sral/rdfa-components": ["@sral/rdfa-components@workspace:packages/rdfa-components"],
 
     "@sral/react-rdf-components": ["@sral/react-rdf-components@workspace:packages/react-components"],
 
