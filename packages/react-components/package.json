@@ -1,6 +1,6 @@
 {
   "name": "@sral/react-rdf-components",
-  "version": "0.1.1",
+  "version": "0.1.2-pre1",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@digdir/designsystemet-react": "1.9.0",
-    "@sral/rdf-components-shared": "0.1.1",
+    "@sral/rdf-components-shared": "0.1.2-pre1",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },

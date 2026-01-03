@@ -1,6 +1,6 @@
 {
   "name": "@sral/rdf-web-components",
-  "version": "0.1.1",
+  "version": "0.1.2-pre1",
   "license": "MIT",
   "type": "module",
   "module": "index.ts",
@@ -24,7 +24,7 @@
     "test": "bun test --preload ./test/setup.ts"
   },
   "dependencies": {
-    "@sral/rdf-components-shared": "workspace:*",
+    "@sral/rdf-components-shared": "0.1.2-pre1",
     "n3": "1.26.0"
   },
   "devDependencies": {
