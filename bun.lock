@@ -54,6 +54,7 @@
       "devDependencies": {
         "@types/bun": "1.2.19",
         "@types/n3": "1.26.0",
+        "happy-dom": "20.0.11",
       },
     },
   },

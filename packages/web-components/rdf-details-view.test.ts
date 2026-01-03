@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import "./test/setup";
 
 const { RDFDetailsView } = await import("./rdf-details-view.ts");
 
