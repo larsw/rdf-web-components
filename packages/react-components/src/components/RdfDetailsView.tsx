@@ -160,39 +160,40 @@ export function RdfDetailsView({
   );
 
   useEffect(() => {
-    let active = true;
+    let cancelled = false;
 
-    async function loadVocabularies() {
+    const loadVocabularies = async () => {
       if (!normalizedVocabularies.length || typeof fetch !== "function") {
         setVocabularyQuads([]);
         return;
       }
 
-      const loaded: Quad[] = [];
-      for (const url of normalizedVocabularies) {
-        try {
-          const response = await fetch(url);
-          if (!response.ok) {
-            continue;
+      const loaded = await Promise.all(
+        normalizedVocabularies.map(async (url) => {
+          try {
+            const response = await fetch(url);
+            if (!response.ok) {
+              return [] as Quad[];
+            }
+            const contentType = response.headers.get("content-type") ?? "";
+            const format = resolveRdfFormat(url, contentType);
+            const text = await response.text();
+            return parseRdf(text, format);
+          } catch {
+            return [] as Quad[];
           }
-          const contentType = response.headers.get("content-type") ?? "";
-          const format = resolveRdfFormat(url, contentType);
-          const text = await response.text();
-          loaded.push(...parseRdf(text, format));
-        } catch {
-          // Ignore vocabulary load failures and fall back to local labels.
-        }
-      }
+        }),
+      );
 
-      if (active) {
-        setVocabularyQuads(loaded);
+      if (!cancelled) {
+        setVocabularyQuads(loaded.flat());
       }
-    }
+    };
 
     loadVocabularies();
 
     return () => {
-      active = false;
+      cancelled = true;
     };
   }, [normalizedVocabularies.join("|")]);
   const groupedSubjects = useMemo(() => groupQuadsBySubject(quads), [quads]);
@@ -442,19 +443,14 @@ function computePredicateColumnWidth(
     labelMap: Map<string, string>;
   },
 ) {
-  let maxLength = 0;
-  for (const [, predicates] of subjects) {
-    for (const predicate of predicates.keys()) {
-      const display = formatPredicate(
-        predicate,
-        namespaces,
-        options.expandUris,
-        options.labelMap,
-      );
-      maxLength = Math.max(maxLength, display.length);
-    }
-  }
+  const predicateLengths = subjects.flatMap(([, predicates]) =>
+    Array.from(predicates.keys()).map((predicate) =>
+      formatPredicate(predicate, namespaces, options.expandUris, options.labelMap)
+        .length,
+    ),
+  );
 
+  const maxLength = predicateLengths.reduce((max, length) => Math.max(max, length), 0);
   const minWidth = 14;
   const maxWidth = 28;
   const clamped = Math.min(Math.max(maxLength, minWidth), maxWidth);
@@ -485,52 +481,47 @@ function renderPredicateObjects(
   );
   const otherQuads = predicateQuads.filter((quad) => !isImageQuad(quad, options));
 
-  const content: ReactNode[] = [];
+  const imageContent = options.showImagesInline && imageQuads.length > 1
+    ? (() => {
+        const imageUris = imageQuads
+          .map((quad) =>
+            quad.object.termType === "NamedNode" ? quad.object.value : null,
+          )
+          .filter((uri): uri is string => Boolean(uri));
 
-  if (options.showImagesInline && imageQuads.length > 1) {
-    const imageUris = imageQuads
-      .map((quad) =>
-        quad.object.termType === "NamedNode" ? quad.object.value : null,
-      )
-      .filter((uri): uri is string => Boolean(uri));
-
-    if (imageUris.length) {
-      content.push(
-        <ImageCarousel
-          key={`carousel-${imageUris.join("|")}`}
-          images={imageUris}
-          renderLink={(uri) =>
-            renderUriLink(uri, namespaces, {
-              expandUris: options.expandUris,
-              enableNavigation: options.enableNavigation,
-              onNavigate: options.onNavigate,
-              subjects: options.subjects,
-              contentTypeCache: options.contentTypeCache,
-            })
-          }
-          showImageUrls={options.showImageUrls}
-        />,
-      );
-    }
-  } else {
-    imageQuads.forEach((quad, idx) => {
-      content.push(
+        return imageUris.length
+          ? [
+              <ImageCarousel
+                key={`carousel-${imageUris.join("|")}`}
+                images={imageUris}
+                renderLink={(uri) =>
+                  renderUriLink(uri, namespaces, {
+                    expandUris: options.expandUris,
+                    enableNavigation: options.enableNavigation,
+                    onNavigate: options.onNavigate,
+                    subjects: options.subjects,
+                    contentTypeCache: options.contentTypeCache,
+                  })
+                }
+                showImageUrls={options.showImageUrls}
+              />,
+            ]
+          : [];
+      })()
+    : imageQuads.map((quad, idx) => (
         <div key={`${quad.subject.value}-${quad.predicate.value}-img-${idx}`}>
           {renderObjectValue(quad, namespaces, options)}
-        </div>,
-      );
-    });
-  }
+        </div>
+      ));
 
-  otherQuads.forEach((quad, idx) => {
-    content.push(
-      <div key={`${quad.subject.value}-${quad.predicate.value}-other-${idx}`}>
-        {renderObjectValue(quad, namespaces, options)}
-      </div>,
-    );
-  });
+  const otherContent = otherQuads.map((quad, idx) => (
+    <div key={`${quad.subject.value}-${quad.predicate.value}-other-${idx}`}>
+      {renderObjectValue(quad, namespaces, options)}
+    </div>
+  ));
 
-  return content.length ? content : null;
+  const combined = [...imageContent, ...otherContent];
+  return combined.length ? combined : null;
 }
 
 function isImageQuad(
@@ -603,24 +594,16 @@ function renderObjectValue(
 
 
 function groupQuadsBySubject(quads: Quad[]): Map<string, Map<string, Quad[]>> {
-  const subjects = new Map<string, Map<string, Quad[]>>();
-
-  quads.forEach((quad) => {
+  return quads.reduce((acc, quad) => {
     const subjectKey = quad.subject.value;
-    if (!subjects.has(subjectKey)) {
-      subjects.set(subjectKey, new Map());
-    }
-
-    const predicateMap = subjects.get(subjectKey)!;
     const predicateKey = quad.predicate.value;
-    if (!predicateMap.has(predicateKey)) {
-      predicateMap.set(predicateKey, []);
-    }
+    const predicateMap = acc.get(subjectKey) ?? new Map<string, Quad[]>();
+    const predicateQuads = predicateMap.get(predicateKey) ?? [];
 
-    predicateMap.get(predicateKey)!.push(quad);
-  });
-
-  return subjects;
+    predicateMap.set(predicateKey, [...predicateQuads, quad]);
+    acc.set(subjectKey, predicateMap);
+    return acc;
+  }, new Map<string, Map<string, Quad[]>>());
 }
 
 function formatTerm(
@@ -684,19 +667,12 @@ type ContentTypeHint = {
 };
 
 function collectUriCandidates(quads: Quad[]) {
-  const uris = new Set<string>();
-  for (const quad of quads) {
-    if (quad.subject.termType === "NamedNode") {
-      uris.add(quad.subject.value);
-    }
-    if (quad.predicate.termType === "NamedNode") {
-      uris.add(quad.predicate.value);
-    }
-    if (quad.object.termType === "NamedNode") {
-      uris.add(quad.object.value);
-    }
-  }
-  return uris;
+  const uriList = quads.flatMap((quad) =>
+    [quad.subject, quad.predicate, quad.object]
+      .filter((term) => term.termType === "NamedNode")
+      .map((term) => term.value),
+  );
+  return new Set(uriList);
 }
 
 async function negotiateContentType(
@@ -1021,47 +997,45 @@ const LABEL_PREDICATES = [
 ];
 
 function buildLabelMap(quads: Quad[], preferredLanguages: string[]) {
-  const candidates = new Map<
-    string,
-    Map<string, { value: string; lang?: string }[]>
-  >();
+  const candidates = quads.reduce(
+    (acc, quad) => {
+      if (
+        !LABEL_PREDICATES.includes(quad.predicate.value) ||
+        quad.subject.termType !== "NamedNode" ||
+        quad.object.termType !== "Literal"
+      ) {
+        return acc;
+      }
 
-  quads.forEach((quad) => {
-    if (!LABEL_PREDICATES.includes(quad.predicate.value)) {
-      return;
-    }
-    if (
-      quad.subject.termType !== "NamedNode" ||
-      quad.object.termType !== "Literal"
-    ) {
-      return;
-    }
-    const subjectMap = candidates.get(quad.subject.value) ?? new Map();
-    const predicateList = subjectMap.get(quad.predicate.value) ?? [];
-    predicateList.push({
-      value: quad.object.value,
-      lang: quad.object.language?.toLowerCase() || undefined,
-    });
-    subjectMap.set(quad.predicate.value, predicateList);
-    candidates.set(quad.subject.value, subjectMap);
-  });
+      const subjectMap = acc.get(quad.subject.value) ?? new Map();
+      const predicateList = subjectMap.get(quad.predicate.value) ?? [];
+      const updatedList = [
+        ...predicateList,
+        {
+          value: quad.object.value,
+          lang: quad.object.language?.toLowerCase() || undefined,
+        },
+      ];
+      subjectMap.set(quad.predicate.value, updatedList);
+      acc.set(quad.subject.value, subjectMap);
+      return acc;
+    },
+    new Map<string, Map<string, { value: string; lang?: string }[]>>(),
+  );
 
-  const labelMap = new Map<string, string>();
-  for (const [subject, predicateMap] of candidates.entries()) {
-    for (const predicate of LABEL_PREDICATES) {
+  return Array.from(candidates.entries()).reduce((labelMap, [subject, predicateMap]) => {
+    const selected = LABEL_PREDICATES.reduce<string | undefined>((match, predicate) => {
+      if (match) return match;
       const list = predicateMap.get(predicate);
-      if (!list || list.length === 0) {
-        continue;
-      }
-      const selected = selectPreferredLabel(list, preferredLanguages);
-      if (selected) {
-        labelMap.set(subject, selected);
-        break;
-      }
-    }
-  }
+      if (!list || list.length === 0) return match;
+      return selectPreferredLabel(list, preferredLanguages) ?? match;
+    }, undefined);
 
-  return labelMap;
+    if (selected) {
+      labelMap.set(subject, selected);
+    }
+    return labelMap;
+  }, new Map<string, string>());
 }
 
 function selectPreferredLabel(
@@ -1110,35 +1084,36 @@ const META_PREDICATES = [
 ];
 
 function buildMetaMap(quads: Quad[], preferredLanguages: string[]) {
-  const candidates = new Map<string, { value: string; lang?: string }[]>();
+  const candidates = quads.reduce(
+    (acc, quad) => {
+      if (
+        !META_PREDICATES.includes(quad.predicate.value) ||
+        quad.subject.termType !== "NamedNode" ||
+        quad.object.termType !== "Literal"
+      ) {
+        return acc;
+      }
 
-  quads.forEach((quad) => {
-    if (!META_PREDICATES.includes(quad.predicate.value)) {
-      return;
-    }
-    if (
-      quad.subject.termType !== "NamedNode" ||
-      quad.object.termType !== "Literal"
-    ) {
-      return;
-    }
-    const list = candidates.get(quad.subject.value) ?? [];
-    list.push({
-      value: quad.object.value,
-      lang: quad.object.language?.toLowerCase() || undefined,
-    });
-    candidates.set(quad.subject.value, list);
-  });
+      const list = acc.get(quad.subject.value) ?? [];
+      acc.set(quad.subject.value, [
+        ...list,
+        {
+          value: quad.object.value,
+          lang: quad.object.language?.toLowerCase() || undefined,
+        },
+      ]);
+      return acc;
+    },
+    new Map<string, { value: string; lang?: string }[]>(),
+  );
 
-  const metaMap = new Map<string, string>();
-  for (const [subject, list] of candidates.entries()) {
+  return Array.from(candidates.entries()).reduce((metaMap, [subject, list]) => {
     const selected = selectPreferredLabel(list, preferredLanguages);
     if (selected) {
       metaMap.set(subject, selected);
     }
-  }
-
-  return metaMap;
+    return metaMap;
+  }, new Map<string, string>());
 }
 
 function renderPredicateLabel(

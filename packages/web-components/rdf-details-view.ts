@@ -245,38 +245,25 @@ export class RDFDetailsView extends HTMLElement {
   }
 
   private renderTableLayout(quads: Quad[]): string {
-    // Group quads by subject
-    const subjects = new Map<string, Quad[]>();
-    quads.forEach((quad: Quad) => {
+    const subjects = quads.reduce((acc, quad) => {
       const subjectValue = quad.subject.value;
-      if (!subjects.has(subjectValue)) {
-        subjects.set(subjectValue, []);
-      }
-      subjects.get(subjectValue)!.push(quad);
-    });
+      const existing = acc.get(subjectValue) ?? [];
+      acc.set(subjectValue, [...existing, quad]);
+      return acc;
+    }, new Map<string, Quad[]>());
 
-    // If currentSubject is set, show only that subject
-    if (this.currentSubject && subjects.has(this.currentSubject)) {
-      const filteredSubjects = new Map();
-      filteredSubjects.set(
-        this.currentSubject,
-        subjects.get(this.currentSubject)!,
-      );
-      subjects.clear();
-      subjects.set(
-        this.currentSubject,
-        filteredSubjects.get(this.currentSubject),
-      );
-    }
+    const visibleSubjects =
+      this.currentSubject && subjects.has(this.currentSubject)
+        ? new Map([[this.currentSubject, subjects.get(this.currentSubject)!]])
+        : subjects;
 
-    let html = '<div class="table-layout">';
+    const tables = Array.from(visibleSubjects.entries())
+      .map(([subjectValue, subjectQuads]) =>
+        this.renderSubjectTable(subjectValue, subjectQuads),
+      )
+      .join("");
 
-    subjects.forEach((subjectQuads, subjectValue) => {
-      html += this.renderSubjectTable(subjectValue, subjectQuads);
-    });
-
-    html += "</div>";
-    return html;
+    return `<div class="table-layout">${tables}</div>`;
   }
 
   private renderSubjectTable(subjectValue: string, quads: Quad[]): string {
@@ -293,36 +280,39 @@ export class RDFDetailsView extends HTMLElement {
         </thead>
         <tbody>`;
 
-    // Group by predicate
-    const predicates = new Map<string, Quad[]>();
-    quads.forEach((quad) => {
+    const predicates = quads.reduce((acc, quad) => {
       const predicateValue = quad.predicate.value;
-      if (!predicates.has(predicateValue)) {
-        predicates.set(predicateValue, []);
-      }
-      predicates.get(predicateValue)!.push(quad);
-    });
+      const existing = acc.get(predicateValue) ?? [];
+      acc.set(predicateValue, [...existing, quad]);
+      return acc;
+    }, new Map<string, Quad[]>());
 
-    predicates.forEach((predQuads, predicateValue) => {
-      const displayPredicate = this.getDisplayLabel(predicateValue);
+    const rows = Array.from(predicates.entries())
+      .map(([predicateValue, predQuads]) => {
+        const displayPredicate = this.getDisplayLabel(predicateValue);
+        return predQuads
+          .map((quad, index) => {
+            const displayObject = this.renderObjectValue(
+              quad.object.value,
+              quad.object.termType,
+              true,
+            );
 
-      predQuads.forEach((quad, index) => {
-        const displayObject = this.renderObjectValue(
-          quad.object.value,
-          quad.object.termType,
-          true,
-        );
+            const predicateCell =
+              index === 0
+                ? `<span class="predicate" title="${this.escapeHtml(predicateValue)}">${this.escapeHtml(displayPredicate)}</span>`
+                : "";
 
-        html += `<tr>
-          <td class="property-cell">
-            ${index === 0 ? `<span class="predicate" title="${this.escapeHtml(predicateValue)}">${this.escapeHtml(displayPredicate)}</span>` : ""}
-          </td>
-          <td class="value-cell">${displayObject}</td>
-        </tr>`;
-      });
-    });
+            return `<tr>
+              <td class="property-cell">${predicateCell}</td>
+              <td class="value-cell">${displayObject}</td>
+            </tr>`;
+          })
+          .join("");
+      })
+      .join("");
 
-    html += "</tbody></table></div>";
+    html += `${rows}</tbody></table></div>`;
     return html;
   }
 
@@ -333,12 +323,14 @@ export class RDFDetailsView extends HTMLElement {
       return "";
     }
 
-    let html = '<div class="namespaces"><h3>Namespaces:</h3><ul>';
-    namespaces.forEach((namespace, prefix) => {
-      html += `<li><strong>${this.escapeHtml(prefix)}</strong>: ${this.escapeHtml(namespace)}</li>`;
-    });
-    html += "</ul></div>";
-    return html;
+    const items = Array.from(namespaces.entries())
+      .map(
+        ([prefix, namespace]) =>
+          `<li><strong>${this.escapeHtml(prefix)}</strong>: ${this.escapeHtml(namespace)}</li>`,
+      )
+      .join("");
+
+    return `<div class="namespaces"><h3>Namespaces:</h3><ul>${items}</ul></div>`;
   }
 
   private shortenURI(uri: string): string {
