@@ -47,9 +47,11 @@ jobs:
         with:
           bun-version: "1.3.5"
           cache: true
+      - name: Clear Bun cache
+        run: bun pm cache rm
 
       - name: Install
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --no-cache
 
       - name: Derive version from tag
         id: tag
