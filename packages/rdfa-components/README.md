@@ -45,7 +45,7 @@ console.log(html);
 
 ### API surface
 
-- `parseRdfToQuads(input, format)` — uses N3 to parse RDF text into quads. Supported formats: `turtle`, `trig`, `ntriples`, `nquads`.
+- `parseRdfToQuads(input, format, options?)` — uses N3 to parse RDF text into quads. Supported formats: `turtle`, `trig`, `ntriples`, `nquads`. Pass `options.graph` to place default-graph quads into a named graph.
 - `quadsToRdfaSubjects(quads)` — groups quads by subject into `{ subject, properties }` entries, preserving language and datatype.
 - `renderRdfa(subject)` — renders one subject into an RDFa `<div>` snippet.
 - `renderRdfaDocument(subjects)` — renders multiple subjects into a wrapped HTML string.
@@ -53,6 +53,7 @@ console.log(html);
 - `extractRdfaSubjectsFromDom(root)` — read RDFa markup from a browser DOM/document into `{ subject, properties }`.
 - `extractRdfaQuadsFromDom(root)` — DOM extraction + conversion to N3 quads.
 - `rdfaSubjectsToQuads(subjects)` — convert RDFa subjects into N3 quads (useful if you already have the grouped shape).
+- Notes: named graphs are not native in RDFa; this package carries graph IRIs via a `data-graph` attribute and preserves them through extraction/rendering.
 
 All literal values are HTML-escaped during rendering.
 

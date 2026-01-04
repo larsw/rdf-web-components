@@ -19,7 +19,7 @@ const sample = `
 ex:alice ex:name "Alice"@en ;
   ex:age "30"^^xsd:integer ;
   ex:friend ex:bob .
-`; // keep simple for quick edits
+`;
 
 textarea.value = sample;
 formatSelect.value = "turtle";

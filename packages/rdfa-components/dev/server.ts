@@ -1,6 +1,6 @@
 import index from "./index.html";
 
-const port = Number(Bun.env.PORT ?? "3202");
+const port = Number(Bun.env.PORT ?? "3003");
 const baseUrl = `http://localhost:${port}`;
 
 console.log(`RDFa components playground running at ${baseUrl}`);

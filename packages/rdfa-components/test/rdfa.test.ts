@@ -5,6 +5,7 @@ import {
   extractRdfaSubjectsFromDom,
   parseRdfToQuads,
   quadsToRdfaSubjects,
+  rdfaSubjectsToQuads,
   renderRdfa,
   renderRdfaDocument,
   rdfToRdfaHtml,
@@ -22,6 +23,17 @@ ex:alice ex:name "Alice"@en ;
 const escapingSample = `
 @prefix ex: <http://example.org/> .
 ex:alice ex:note "Bob & <Bob>" .
+`;
+
+const trigSample = `
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Foo {
+ex:alice ex:name "Alice"@en ;
+  ex:age "30"^^xsd:integer ;
+  ex:friend ex:bob .
+}
 `;
 
 describe("rdfa conversion", () => {
@@ -74,6 +86,26 @@ describe("rdfa conversion", () => {
     const html = rdfToRdfaHtml(escapingSample, "turtle");
     expect(html).toContain("Bob &amp; &lt;Bob&gt;");
     expect(html).not.toContain("<Bob>");
+  });
+
+  test("preserves named graphs via data-graph attribute", () => {
+    const quads = parseRdfToQuads(trigSample, "trig");
+    const subjects = quadsToRdfaSubjects(quads);
+    expect(subjects).toHaveLength(1);
+    expect(subjects[0].graph).toBe("http://example.org/Foo");
+
+    const html = renderRdfa(subjects[0]);
+    expect(html).toContain('data-graph="http://example.org/Foo"');
+
+    const roundTripQuads = rdfaSubjectsToQuads(subjects);
+    expect(roundTripQuads[0].graph.termType).toBe("NamedNode");
+    expect(roundTripQuads[0].graph.value).toBe("http://example.org/Foo");
+  });
+
+  test("parseRdfToQuads can assign a default graph", () => {
+    const quads = parseRdfToQuads(turtleSample, "turtle", { graph: "http://example.org/Graph" });
+    expect(quads.every((q) => q.graph.termType === "NamedNode")).toBeTrue();
+    expect(quads[0].graph.value).toBe("http://example.org/Graph");
   });
 
   test("extracts RDFa subjects from DOM", () => {

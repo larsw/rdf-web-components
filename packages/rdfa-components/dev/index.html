@@ -4,114 +4,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RDFa Components Playground</title>
     <style>
-      :root {
-        color-scheme: light dark;
-        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: radial-gradient(circle at 20% 20%, #0ea5e920, transparent 35%),
-          radial-gradient(circle at 80% 0%, #22c55e20, transparent 35%),
-          #0b1021;
-        color: #e5e7eb;
-      }
+      *, *::before, *::after { box-sizing: border-box; }
+      :root { font-family: "Inter", system-ui, sans-serif; color: #0f172a; background: #f8fafc; }
+      body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 1.5rem; background: #f8fafc; }
+      main { width: min(960px, 100%); background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+      h1 { margin: 0; font-size: 1.35rem; }
+      p { margin: 0.4rem 0 1rem; color: #475569; }
+      label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+      textarea, pre, .panel { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; padding: 0.8rem; color: inherit; }
+      textarea { min-height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.95rem; line-height: 1.4; resize: vertical; }
+      pre { white-space: pre-wrap; word-break: break-word; overflow: auto; }
+      .panel { min-height: 160px; overflow: auto; word-break: break-word; }
+      select, button { padding: 0.55rem 0.7rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; }
+      .header { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+      .header select, .header button { min-width: 120px; width: auto; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.9rem; margin-top: 0.9rem; align-items: start; }
+      .grid > div { min-width: 0; }
+      .status { font-size: 0.9rem; color: #2563eb; }
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        padding: 2rem;
-      }
-
-      main {
-        width: min(1100px, 100%);
-        background: rgba(17, 24, 39, 0.75);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 18px;
-        padding: 1.75rem;
-        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
-      }
-
-      h1 {
-        margin: 0;
-        font-size: 1.6rem;
-        letter-spacing: -0.03em;
-      }
-
-      p {
-        margin: 0.25rem 0 1.5rem;
-        color: #9ca3af;
-      }
-
-      label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 0.35rem;
-      }
-
-      textarea,
-      select,
-      button,
-      pre,
-      .panel {
-        width: 100%;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.02);
-        color: inherit;
-      }
-
-      textarea {
-        min-height: 200px;
-        padding: 0.85rem;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 0.95rem;
-        line-height: 1.35;
-        resize: vertical;
-      }
-
-      select,
-      button {
-        padding: 0.65rem 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      button {
-        background: linear-gradient(135deg, #22c55e, #0ea5e9);
-        border: none;
-        color: #0b1021;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 1rem;
-        margin-top: 1.25rem;
-      }
-
-      .panel {
-        padding: 0.75rem;
-        min-height: 180px;
-        overflow: auto;
-      }
-
-      pre {
-        margin: 0;
-        padding: 0.75rem;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
-      .header {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .status {
-        font-size: 0.9rem;
-        color: #a855f7;
+      @media (max-width: 720px) {
+        .grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>

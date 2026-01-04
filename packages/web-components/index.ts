@@ -1,7 +1,7 @@
 import index from "./index.html";
 import { findVocabularyByRoute } from "@sral/rdf-components-shared";
 
-const port = Number(Bun.env.PORT ?? "3002");
+const port = Number(Bun.env.PORT ?? "3001");
 const baseUrl = `http://localhost:${port}`;
 
 console.log(`Starting RDF Web Components server on ${baseUrl}`);
@@ -38,7 +38,7 @@ Bun.serve({
   },
 });
 
-console.log("Server running at http://localhost:3002");
+console.log(`Server running at ${baseUrl}`);
 
 function buildCorsHeaders(contentType: string) {
   return {

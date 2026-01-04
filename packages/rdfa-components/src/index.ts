@@ -10,6 +10,7 @@ export type RdfaProperty = {
 
 export type RdfaSubject = {
   subject: string;
+  graph?: string;
   properties: RdfaProperty[];
 };
 
@@ -19,23 +20,42 @@ type RdfaDomRoot = ParentNode & {
   querySelectorAll(selectors: string): Iterable<Element> | ArrayLike<Element>;
 };
 
-export function parseRdfToQuads(data: string, format: RdfFormat): Quad[] {
-  return new Parser({ format }).parse(data);
-}
+export const parseRdfToQuads = (
+  data: string,
+  format: RdfFormat,
+  options?: { graph?: string }
+): Quad[] => {
+  const quads = new Parser({ format }).parse(data);
+  if (!options?.graph) return quads;
 
-export function quadsToRdfaSubjects(quads: Quad[]): RdfaSubject[] {
-  const grouped = quads.reduce<Record<string, RdfaProperty[]>>((acc, quad) => {
+  const { quad, namedNode } = DataFactory;
+  return quads.map((q) => {
+    const graph = q.graph.termType === "DefaultGraph" && options.graph ? namedNode(options.graph) : q.graph;
+    return quad(q.subject, q.predicate, q.object, graph);
+  });
+};
+
+export const quadsToRdfaSubjects = (quads: Quad[]): RdfaSubject[] => {
+  const grouped = quads.reduce<Record<string, RdfaSubject>>((acc, quad) => {
     const subject = quad.subject.value;
-    const properties = acc[subject] ?? [];
+    const graph = quad.graph.termType === "DefaultGraph" ? undefined : quad.graph.value;
+    const key = `${graph ?? ""}|${subject}`;
+    const existing = acc[key];
+    const properties = existing?.properties ?? [];
     const updatedProps = [...properties, quadToRdfaProperty(quad)];
-    return { ...acc, [subject]: updatedProps };
+    return { ...acc, [key]: { subject, graph, properties: updatedProps } };
   }, {});
 
-  return Object.entries(grouped).map(([subject, properties]) => ({ subject, properties }));
-}
+  return Object.values(grouped);
+};
 
-export function renderRdfa(subject: RdfaSubject): string {
-  const attrs = [`resource="${subject.subject}"`].join(" ");
+export const renderRdfa = (subject: RdfaSubject): string => {
+  const attrs = [
+    `resource="${subject.subject}"`,
+    subject.graph ? `data-graph="${subject.graph}"` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const rows = subject.properties
     .map((prop) => {
       const langAttr = prop.lang ? ` lang=\"${prop.lang}\"` : "";
@@ -44,72 +64,70 @@ export function renderRdfa(subject: RdfaSubject): string {
     })
     .join("");
   return `<div ${attrs}>${rows}</div>`;
-}
+};
 
-export function renderRdfaDocument(subjects: RdfaSubject[]): string {
-  return subjects.map(renderRdfa).join("");
-}
+export const renderRdfaDocument = (subjects: RdfaSubject[]): string => subjects.map(renderRdfa).join("");
 
-export function rdfToRdfaHtml(data: string, format: RdfFormat): string {
-  return renderRdfaDocument(quadsToRdfaSubjects(parseRdfToQuads(data, format)));
-}
+export const rdfToRdfaHtml = (data: string, format: RdfFormat): string =>
+  renderRdfaDocument(quadsToRdfaSubjects(parseRdfToQuads(data, format)));
 
-export function extractRdfaSubjectsFromDom(root: RdfaDomRoot): RdfaSubject[] {
+export const extractRdfaSubjectsFromDom = (root: RdfaDomRoot): RdfaSubject[] => {
   const subjectNodes = toElements(root.querySelectorAll("[resource]"));
 
-  const grouped = subjectNodes.reduce<Record<string, RdfaProperty[]>>((acc, subjectEl) => {
+  const grouped = subjectNodes.reduce<Record<string, RdfaSubject>>((acc, subjectEl) => {
     const subject = subjectEl.getAttribute("resource");
     if (!subject) return acc;
+
+    const graph = subjectEl.getAttribute("data-graph") || undefined;
 
     const properties = toElements(subjectEl.querySelectorAll("[property]"))
       .map(rdfaPropertyFromElement)
       .filter(Boolean) as RdfaProperty[];
 
-    const mergedProps = [...(acc[subject] ?? []), ...properties];
-    return { ...acc, [subject]: mergedProps };
+    const key = `${graph ?? ""}|${subject}`;
+    const mergedProps = [...(acc[key]?.properties ?? []), ...properties];
+    return { ...acc, [key]: { subject, graph, properties: mergedProps } };
   }, {});
 
-  return Object.entries(grouped).map(([subject, properties]) => ({ subject, properties }));
-}
+  return Object.values(grouped);
+};
 
-export function rdfaSubjectsToQuads(subjects: RdfaSubject[]): Quad[] {
-  const { namedNode, literal, quad } = DataFactory;
+export const rdfaSubjectsToQuads = (subjects: RdfaSubject[]): Quad[] => {
+  const { namedNode, literal, quad, defaultGraph } = DataFactory;
 
   return subjects.flatMap((subject) =>
     subject.properties.map((prop) => {
       const subjectNode = namedNode(subject.subject);
       const predicateNode = namedNode(prop.predicate);
+      const graphNode = subject.graph ? namedNode(subject.graph) : defaultGraph();
       if (prop.resource) {
-        return quad(subjectNode, predicateNode, namedNode(prop.value));
+        return quad(subjectNode, predicateNode, namedNode(prop.value), graphNode);
       }
 
       if (prop.datatype) {
-        return quad(subjectNode, predicateNode, literal(prop.value, namedNode(prop.datatype)));
+        return quad(subjectNode, predicateNode, literal(prop.value, namedNode(prop.datatype)), graphNode);
       }
 
       if (prop.lang) {
-        return quad(subjectNode, predicateNode, literal(prop.value, prop.lang));
+        return quad(subjectNode, predicateNode, literal(prop.value, prop.lang), graphNode);
       }
 
-      return quad(subjectNode, predicateNode, literal(prop.value));
+      return quad(subjectNode, predicateNode, literal(prop.value), graphNode);
     })
   );
-}
+};
 
-export function extractRdfaQuadsFromDom(root: RdfaDomRoot): Quad[] {
-  return rdfaSubjectsToQuads(extractRdfaSubjectsFromDom(root));
-}
+export const extractRdfaQuadsFromDom = (root: RdfaDomRoot): Quad[] => rdfaSubjectsToQuads(extractRdfaSubjectsFromDom(root));
 
-function escapeHtml(value: string): string {
-  return value
+const escapeHtml = (value: string): string =>
+  value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
 
-function quadToRdfaProperty(quad: Quad): RdfaProperty {
+const quadToRdfaProperty = (quad: Quad): RdfaProperty => {
   const object = quad.object;
   if (object.termType === "Literal") {
     return {
@@ -125,13 +143,12 @@ function quadToRdfaProperty(quad: Quad): RdfaProperty {
     value: object.value,
     resource: true,
   };
-}
+};
 
-function toElements(collection: Iterable<Element> | ArrayLike<Element>): Element[] {
-  return Array.from(collection as any as Iterable<Element>);
-}
+const toElements = (collection: Iterable<Element> | ArrayLike<Element>): Element[] =>
+  Array.from(collection as any as Iterable<Element>);
 
-function rdfaPropertyFromElement(el: Element): RdfaProperty | undefined {
+const rdfaPropertyFromElement = (el: Element): RdfaProperty | undefined => {
   const predicate = el.getAttribute("property");
   if (!predicate) return undefined;
 
@@ -149,6 +166,6 @@ function rdfaPropertyFromElement(el: Element): RdfaProperty | undefined {
 
   const text = (el.textContent ?? "").trim();
   return { predicate, value: text, lang, datatype };
-}
+};
 
 export default rdfToRdfaHtml;
