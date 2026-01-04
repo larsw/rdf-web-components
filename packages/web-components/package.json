@@ -6,7 +6,7 @@
   "module": "index.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/larsw/rdf-web-components",
+    "url": "https://github.com/larsw/rdf-web-components.git",
     "directory": "packages/web-components"
   },
   "author": {
