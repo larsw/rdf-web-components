@@ -6,5 +6,5 @@
     "declaration": true,
     "emitDeclarationOnly": false
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "dev/**/*.ts", "dev/**/*.tsx", "dev/**/*.html"]
 }

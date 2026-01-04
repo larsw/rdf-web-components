@@ -21,7 +21,8 @@
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir dist",
-    "test": "bun test"
+    "test": "bun test",
+    "dev": "bun --hot ./dev/server.ts"
   },
   "dependencies": {
     "n3": "1.26.0"

@@ -1,0 +1,159 @@
+<html data-color-scheme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RDFa Components Playground</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at 20% 20%, #0ea5e920, transparent 35%),
+          radial-gradient(circle at 80% 0%, #22c55e20, transparent 35%),
+          #0b1021;
+        color: #e5e7eb;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      main {
+        width: min(1100px, 100%);
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 18px;
+        padding: 1.75rem;
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.6rem;
+        letter-spacing: -0.03em;
+      }
+
+      p {
+        margin: 0.25rem 0 1.5rem;
+        color: #9ca3af;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+
+      textarea,
+      select,
+      button,
+      pre,
+      .panel {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+        color: inherit;
+      }
+
+      textarea {
+        min-height: 200px;
+        padding: 0.85rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.95rem;
+        line-height: 1.35;
+        resize: vertical;
+      }
+
+      select,
+      button {
+        padding: 0.65rem 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button {
+        background: linear-gradient(135deg, #22c55e, #0ea5e9);
+        border: none;
+        color: #0b1021;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1rem;
+        margin-top: 1.25rem;
+      }
+
+      .panel {
+        padding: 0.75rem;
+        min-height: 180px;
+        overflow: auto;
+      }
+
+      pre {
+        margin: 0;
+        padding: 0.75rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .header {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .status {
+        font-size: 0.9rem;
+        color: #a855f7;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>RDF → RDFa playground</h1>
+      <p>Paste RDF (Turtle, TriG, N-Triples, N-Quads), convert to RDFa HTML, and inspect extracted subjects.</p>
+
+      <div class="header">
+        <label for="format">Format</label>
+        <select id="format">
+          <option value="turtle">turtle</option>
+          <option value="trig">trig</option>
+          <option value="n-triples">n-triples</option>
+          <option value="n-quads">n-quads</option>
+        </select>
+        <button id="convert">Convert</button>
+        <span id="status" class="status"></span>
+      </div>
+
+      <label for="input">RDF input</label>
+      <textarea id="input"></textarea>
+
+      <div class="grid">
+        <div>
+          <label>RDFa HTML output</label>
+          <pre id="htmlOutput"></pre>
+        </div>
+        <div>
+          <label>Live preview</label>
+          <div id="preview" class="panel"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Extracted RDFa subjects</label>
+          <pre id="subjectsOutput"></pre>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="./frontend.ts"></script>
+  </body>
+</html>

@@ -61,6 +61,7 @@ All literal values are HTML-escaped during rendering.
 ```bash
 bun install
 bun run --filter @sral/rdfa-components build
+bun run --filter @sral/rdfa-components dev  # playground with HMR
 bun run --filter @sral/rdfa-components test
 ```
 ```
