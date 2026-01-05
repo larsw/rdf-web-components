@@ -1,3 +1,5 @@
+import * as RDF from "@rdfjs/types";
+import { type Quad } from "n3";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -7,7 +9,7 @@ import {
   Paragraph,
   Switch,
 } from "@digdir/designsystemet-react";
-import type { RdfDetailsViewProps } from "../src";
+import type { LiteralRenderer, LiteralRendererOptions, PredicateRenderer, PredicateRendererOptions, RdfDetailsViewProps } from "../src";
 import { RdfDetailsView } from "../src";
 import "@digdir/designsystemet-css";
 import "@digdir/designsystemet-css/theme";
@@ -246,7 +248,7 @@ function App() {
         margin: "var(--ds-size-7) auto",
         maxWidth: "52rem",
         paddingInline: "var(--ds-size-5)",
-        width: "100%",
+        width: "%",
       }}
     >
       <div
@@ -262,7 +264,7 @@ function App() {
             RDF React Components
           </Heading>
           <Paragraph data-size="md" style={{ marginTop: "0.5rem" }}>
-            Playground for the RdfDetailsView component.
+            Playground for the <em>RdfDetailsView</em> component.
           </Paragraph>
         </div>
         <Switch
@@ -284,12 +286,39 @@ function App() {
   );
 }
 
+const isNamedNode = (quad: RDF.Quad_Object): boolean => quad.termType === 'NamedNode';
+
+const predicateRenderers: Record<string, PredicateRenderer> = {
+  "http://xmlns.com/foaf/0.1/depiction": (quad: Quad, _opts: PredicateRendererOptions) => {
+    console.log("Custom rendering foaf:depiction for:", quad);
+    if (isNamedNode(quad.object)) {
+      return (<img
+      src={quad.object.value} // Value is Iri which derives from string
+      alt="Depiction"
+      style={{ maxWidth: "50px", borderRadius: "8px" }}
+    />);
+    } else {
+      return <span>Invalid depiction value ({quad.object.termType})</span>;
+    }
+  }
+}
+
+const literalRenderers: Record<string, LiteralRenderer> = {
+  "http://www.w3.org/2001/XMLSchema#date": (literal, _quad: Quad, _opts: LiteralRendererOptions) => {
+    const date = new Date(literal.value);
+    return <span style={{fontFamily: 'Ubuntu Mono', color: 'red'}}>{date.toISOString()}</span>;
+  }
+};
+
 const viewerProps: RdfDetailsViewProps = {
   data: sampleData,
   preferredLanguages: ["en"],
   vocabularies: ["/vocab"],
   enableNavigation: true,
+  predicateRenderers: predicateRenderers,
+  literalRenderers: literalRenderers,
   theme: "dark",
+  showNamespaces: true,
 };
 
 const root = createRoot(document.getElementById("app")!);
@@ -299,3 +328,8 @@ root.render(
     <App />
   </React.StrictMode>,
 );
+
+// if (import.meta.hot) {
+//   import.meta.hot.accept();
+// }
+

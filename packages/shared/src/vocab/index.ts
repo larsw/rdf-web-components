@@ -8,9 +8,7 @@ export interface VocabularyDescriptor {
   description?: string;
 }
 
-function filePath(relativePath: string) {
-  return new URL(relativePath, import.meta.url).pathname;
-}
+const filePath = (relativePath: string): string => new URL(relativePath, import.meta.url).pathname
 
 /** Local vocabularies available for demo and development usage. */
 export const localVocabularies: VocabularyDescriptor[] = [
@@ -75,17 +73,17 @@ export const localVocabularies: VocabularyDescriptor[] = [
 /**
  * Find a local vocabulary descriptor by route.
  */
-export function findVocabularyByRoute(
+export const findVocabularyByRoute = (
   route: string,
-): VocabularyDescriptor | undefined {
+): VocabularyDescriptor | undefined => {
   return localVocabularies.find((vocab) => vocab.route === route);
 }
 
 /**
  * Find a local vocabulary descriptor by key.
  */
-export function findVocabularyByKey(
+export const findVocabularyByKey = (
   key: string,
-): VocabularyDescriptor | undefined {
+): VocabularyDescriptor | undefined => {
   return localVocabularies.find((vocab) => vocab.key === key);
 }

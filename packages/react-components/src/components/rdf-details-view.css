@@ -4,8 +4,7 @@
 
 .rdf-details-view {
   margin: 0 auto;
-  max-width: 960px;
-  width: 100%;
+  max-width: 500px;
 }
 
 .rdf-details-view .literal-value {
@@ -31,13 +30,13 @@
 .rdf-details-view .lang-tag {
   background: var(--ds-color-neutral-surface-tinted);
   border: 1px solid var(--ds-color-neutral-border-subtle);
-  border-radius: 999px;
+  border-radius: 5px;
   color: var(--ds-color-neutral-text-subtle);
   font-size: 0.7em;
   font-weight: 600;
   letter-spacing: 0.03em;
-  margin-left: 0.4rem;
-  padding: 0.1rem 0.4rem;
+  margin-left: 0.5rem;
+  padding: 0rem 0.3rem;
   text-transform: uppercase;
 }
 
@@ -47,7 +46,7 @@
 
 .rdf-details-view .content-type-hint {
   color: var(--ds-color-neutral-text-subtle);
-  font-size: 0.875em;
+  font-size: 0.9em;
   margin-left: 0.25rem;
 }
 

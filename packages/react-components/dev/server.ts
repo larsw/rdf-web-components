@@ -42,4 +42,4 @@ function buildCorsHeaders(contentType: string) {
 }
 
 // open browser
-Bun.spawn(["open", baseUrl]);
+//Bun.spawn(["open", baseUrl]);
