@@ -1,6 +1,6 @@
 {
   "name": "@sral/react-rdf-components",
-  "version": "0.1.2-pre1",
+  "version": "0.1.2",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@digdir/designsystemet-react": "1.9.0",
-    "@sral/rdf-components-shared": "0.1.2-pre1",
+    "@sral/rdf-components-shared": "0.1.2",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
@@ -52,5 +52,13 @@
     "@types/react-dom": "19.2.3",
     "happy-dom": "20.0.11",
     "@storybook/addon-docs": "10.1.11"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 80,
+    "semi": false,
+    "tabWidth": 2,
+    "useTabs": false
   }
 }

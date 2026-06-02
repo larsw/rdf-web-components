@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+
+import * as RDF from "@rdfjs/types";
+import { DataFactory, Writer, type Quad } from "n3";
+
 import {
   Card,
   CardBlock,
@@ -7,10 +11,11 @@ import {
   Paragraph,
   Switch,
 } from "@digdir/designsystemet-react";
-import type { RdfDetailsViewProps } from "../src";
-import { RdfDetailsView } from "../src";
 import "@digdir/designsystemet-css";
 import "@digdir/designsystemet-css/theme";
+
+import type { LiteralRenderer, LiteralRendererOptions, PredicateRenderer, PredicateRendererOptions, RdfDetailsViewProps } from "../src";
+import { RdfDetailsView } from "../src";
 
 const globalScope = globalThis as typeof globalThis & {
   global?: typeof globalThis;
@@ -25,7 +30,8 @@ const foafPersonData = `
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ex:alice a foaf:Person ;
+<http://example.org/alice> {
+<http://example.org/alice#data> a foaf:Person ;
     foaf:name "Alice Smith"@en ;
     foaf:name "Alice Schmidt"@de ;
     foaf:name "Alicia Martinez"@es ;
@@ -51,7 +57,8 @@ ex:alice a foaf:Person ;
     ex:verified true ;
     ex:languages "English", "German", "Spanish" ;
     ex:skills "Programming", "Design", "Project Management" .
-
+}
+{
 ex:bob a foaf:Person ;
     foaf:name "Bob Johnson"@en ;
     foaf:name "Robert Johnson"@en ;
@@ -136,6 +143,7 @@ ex:eve a foaf:Person ;
     ex:verified true ;
     ex:languages "English", "French" ;
     ex:skills "Product Management", "Growth Hacking", "Analytics" .
+}
 `;
 
 const dublinCoreData = `
@@ -232,13 +240,124 @@ ex:document3 dc:title "Linked Data Patterns"@en ;
 
 const sampleData = `${foafPersonData}\n${dublinCoreData}`;
 
+const { namedNode, blankNode, literal, quad: makeQuad } = DataFactory;
+
+const turtlePrefixes: Record<string, string> = {
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+  xsd: "http://www.w3.org/2001/XMLSchema#",
+  foaf: "http://xmlns.com/foaf/0.1/",
+  dc: "http://purl.org/dc/elements/1.1/",
+  dcterms: "http://purl.org/dc/terms/",
+  skos: "http://www.w3.org/2004/02/skos/core#",
+  schema: "http://schema.org/",
+  ex: "http://example.org/",
+};
+
+const toResource = (value: string) =>
+  value.startsWith("_:") ? blankNode(value.slice(2)) : namedNode(value);
+
+/**
+ * Reconstruct quads from the RDFa attributes the component renders into the
+ * DOM (`about` on subjects, `property`/`rel`/`resource`/`content`/`datatype`/
+ * `lang` on objects). This reads back the emitted markup rather than the
+ * source data, so it reflects exactly what is currently displayed.
+ */
+const extractRdfaQuads = (root: HTMLElement): Quad[] => {
+  const quads: Quad[] = [];
+
+  root.querySelectorAll<HTMLElement>("[property]").forEach((element) => {
+    const subjectElement = element.closest<HTMLElement>("[about]");
+    const about = subjectElement?.getAttribute("about");
+    const predicate = element.getAttribute("property");
+    if (!about || !predicate) {
+      return;
+    }
+    const value = element.getAttribute("content") ?? element.textContent ?? "";
+    const language = element.getAttribute("lang");
+    const datatype = element.getAttribute("datatype");
+    const object = language
+      ? literal(value, language)
+      : datatype
+        ? literal(value, namedNode(datatype))
+        : literal(value);
+    quads.push(makeQuad(toResource(about), namedNode(predicate), object));
+  });
+
+  root
+    .querySelectorAll<HTMLElement>("[rel][resource]")
+    .forEach((element) => {
+      const subjectElement = element.closest<HTMLElement>("[about]");
+      const about = subjectElement?.getAttribute("about");
+      const predicate = element.getAttribute("rel");
+      const resource = element.getAttribute("resource");
+      if (!about || !predicate || !resource) {
+        return;
+      }
+      quads.push(
+        makeQuad(
+          toResource(about),
+          namedNode(predicate),
+          toResource(resource),
+        ),
+      );
+    });
+
+  return quads;
+};
+
+const serializeTurtle = (quads: Quad[]): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const writer = new Writer({ prefixes: turtlePrefixes });
+    writer.addQuads(quads);
+    writer.end((error, result) =>
+      error ? reject(error) : resolve(result ?? ""),
+    );
+  });
+
 function App() {
   const [colorScheme, setColorScheme] = useState<"light" | "dark">("dark");
+  const [emitRdfa, setEmitRdfa] = useState(false);
+  const [turtle, setTurtle] = useState("");
+  const viewerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-color-scheme", colorScheme);
     document.body.setAttribute("data-color-scheme", colorScheme);
   }, [colorScheme]);
+
+  useEffect(() => {
+    const element = viewerRef.current;
+    if (!emitRdfa || !element) {
+      setTurtle("");
+      return;
+    }
+
+    let frame = 0;
+    const extract = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        serializeTurtle(extractRdfaQuads(element))
+          .then(setTurtle)
+          .catch((error: unknown) =>
+            setTurtle(`# Failed to serialize RDFa: ${String(error)}`),
+          );
+      });
+    };
+
+    extract();
+    const observer = new MutationObserver(extract);
+    observer.observe(element, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [emitRdfa]);
 
   return (
     <div
@@ -246,7 +365,7 @@ function App() {
         margin: "var(--ds-size-7) auto",
         maxWidth: "52rem",
         paddingInline: "var(--ds-size-5)",
-        width: "100%",
+        width: "%",
       }}
     >
       <div
@@ -262,34 +381,115 @@ function App() {
             RDF React Components
           </Heading>
           <Paragraph data-size="md" style={{ marginTop: "0.5rem" }}>
-            Playground for the RdfDetailsView component.
+            Playground for the <em>RdfDetailsView</em> component.
           </Paragraph>
         </div>
-        <Switch
-          label="Dark mode"
-          checked={colorScheme === "dark"}
-          onChange={(event) => {
-            setColorScheme(event.currentTarget.checked ? "dark" : "light");
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--ds-size-2)",
           }}
-          position="end"
-          value={"dark"}
-        />
+        >
+          <Switch
+            label="Dark mode"
+            checked={colorScheme === "dark"}
+            onChange={(event) => {
+              setColorScheme(event.currentTarget.checked ? "dark" : "light");
+            }}
+            position="end"
+            value={"dark"}
+          />
+          <Switch
+            label="Emit RDFa"
+            description="Annotate the view with RDFa and show the extracted Turtle"
+            checked={emitRdfa}
+            onChange={(event) => {
+              setEmitRdfa(event.currentTarget.checked);
+            }}
+            position="end"
+            value={"rdfa"}
+          />
+        </div>
       </div>
       <Card style={{ marginTop: "var(--ds-size-6)" }}>
         <CardBlock>
-          <RdfDetailsView {...viewerProps} theme={colorScheme} />
+          <div ref={viewerRef}>
+            <RdfDetailsView
+              {...viewerProps}
+              theme={colorScheme}
+              emitRdfa={emitRdfa}
+            />
+          </div>
         </CardBlock>
       </Card>
+      {emitRdfa ? (
+        <Card style={{ marginTop: "var(--ds-size-5)" }}>
+          <CardBlock>
+            <Heading level={2} data-size="sm">
+              Extracted RDFa (Turtle)
+            </Heading>
+            <Paragraph data-size="sm" style={{ marginTop: "0.25rem" }}>
+              Reconstructed from the RDFa attributes in the rendered markup
+              above.
+            </Paragraph>
+            <pre
+              aria-label="Extracted RDFa as Turtle"
+              style={{
+                marginTop: "var(--ds-size-3)",
+                padding: "var(--ds-size-3)",
+                borderRadius: "var(--ds-border-radius-md, 8px)",
+                background: "var(--ds-color-neutral-surface-tinted, #00000014)",
+                overflow: "auto",
+                maxHeight: "28rem",
+                fontFamily:
+                  "var(--ds-font-family-mono, ui-monospace, monospace)",
+                fontSize: "0.8125rem",
+                whiteSpace: "pre",
+              }}
+            >
+              {turtle || "# No triples extracted from the current view."}
+            </pre>
+          </CardBlock>
+        </Card>
+      ) : null}
     </div>
   );
 }
+
+const isNamedNode = (quad: RDF.Quad_Object): boolean => quad.termType === 'NamedNode';
+
+const predicateRenderers: Record<string, PredicateRenderer> = {
+  // "http://xmlns.com/foaf/0.1/depiction": (quad: Quad, _opts: PredicateRendererOptions) => {
+  //   if (isNamedNode(quad.object)) {
+  //     return (<img
+  //       src={quad.object.value} // Value is Iri which derives from string
+  //       alt="Depiction"
+  //       style={{ maxWidth: "50px", borderRadius: "8px" }}
+  //     />);
+  //   } else {
+  //     return <span>Invalid depiction value ({quad.object.termType})</span>;
+  //   }
+  // }
+}
+
+const literalRenderers: Record<string, LiteralRenderer> = {
+  // "http://www.w3.org/2001/XMLSchema#date": (literal, _quad: Quad, _opts: LiteralRendererOptions) => {
+  //   const date = new Date(literal.value);
+  //   return <span style={{ fontFamily: 'Ubuntu Mono', color: 'red' }}>{date.toISOString()}</span>;
+  // }
+};
 
 const viewerProps: RdfDetailsViewProps = {
   data: sampleData,
   preferredLanguages: ["en"],
   vocabularies: ["/vocab"],
   enableNavigation: true,
+  predicateRenderers: predicateRenderers,
+  literalRenderers: literalRenderers,
   theme: "dark",
+  showNamespaces: true,
+  format: "trig",
 };
 
 const root = createRoot(document.getElementById("app")!);
@@ -299,3 +499,8 @@ root.render(
     <App />
   </React.StrictMode>,
 );
+
+// if (import.meta.hot) {
+//   import.meta.hot.accept();
+// }
+

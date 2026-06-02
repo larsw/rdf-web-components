@@ -37,7 +37,7 @@ const COMMON_PREFIXES: Record<string, string> = {
  */
 export const parseRdf = (
   data: string,
-  format: RDFFormat = "turtle",
+  format: RDFFormat = "turtle"
 ): Quad[] => {
   const parser = new Parser({ format });
   return parser.parse(data);
@@ -48,15 +48,26 @@ export const parseRdf = (
  */
 export const extractNamespacesFromQuads = (quads: Quad[]): NamespaceMap => {
   const discovered = quads
-    .flatMap((quad) => [quad.subject.value, quad.predicate.value, quad.object.value])
-    .filter((value) => value.startsWith("http://") || value.startsWith("https://"))
+    .flatMap((quad) => [
+      quad.subject.value,
+      quad.predicate.value,
+      quad.object.value,
+    ])
+    .filter(
+      (value) => value.startsWith("http://") || value.startsWith("https://")
+    )
     .map((value) => {
       const uriMatch = value.match(/^https?:\/\/[^\/\s]+/);
       if (!uriMatch) return null;
-      const lastSlash = Math.max(value.lastIndexOf("/"), value.lastIndexOf("#"));
+      const lastSlash = Math.max(
+        value.lastIndexOf("/"),
+        value.lastIndexOf("#")
+      );
       if (lastSlash <= 0) return null;
       const namespace = value.substring(0, lastSlash + 1);
-      return namespace.endsWith("/") || namespace.endsWith("#") ? namespace : null;
+      return namespace.endsWith("/") || namespace.endsWith("#")
+        ? namespace
+        : null;
     })
     .filter((namespace): namespace is string => Boolean(namespace));
 
@@ -90,7 +101,7 @@ export const generatePrefix = (namespace: string): string | null => {
   }
 
   return null;
-};
+}
 
 /**
  * Shorten a URI using known namespaces, falling back to the full URI.
@@ -109,4 +120,4 @@ export const shortenUri = (uri: string, namespaces: NamespaceMap): string => {
   }
 
   return uri;
-};
+}
