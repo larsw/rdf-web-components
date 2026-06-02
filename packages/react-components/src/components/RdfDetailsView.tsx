@@ -132,6 +132,13 @@ export interface RdfDetailsViewProps {
    */
   enableContentNegotiation?: boolean
   /**
+   * Whether to annotate the rendered markup with RDFa attributes
+   * (`about`, `property`, `rel`, `resource`, `content`, `datatype`, `lang`)
+   * so the view is machine-readable as RDFa. Named graphs are flattened to
+   * triples. The default is false.
+   */
+  emitRdfa?: boolean
+  /**
    * Custom literal renderers keyed by datatype IRI.
    */
   literalRenderers?: Record<string, LiteralRenderer>
@@ -143,6 +150,33 @@ export interface RdfDetailsViewProps {
    * Optional additional CSS class name for the component.
    */
   className?: string
+}
+
+type TableRenderOptions = {
+  expandUris: boolean
+  preferredLanguages: string[]
+  showImagesInline: boolean
+  showImageUrls: boolean
+  labelMap: Map<string, string>
+  enableNavigation: boolean
+  selectedSubject: string | null
+  onNavigate: (subject: string | null) => void
+  subjects: string[]
+  contentTypeCache: Map<string, ContentTypeHint>
+  metaMap: Map<string, string>
+  showDatatypes: boolean
+  showLanguageTags: boolean
+  literalRenderers?: Record<string, LiteralRenderer>
+  predicateRenderers?: Record<string, PredicateRenderer>
+  imagePredicateSet: Set<string>
+  predicateOrder: string[]
+  emitRdfa: boolean
+}
+
+type GraphGrouping = {
+  graphKey: string
+  graphTerm: Quad['graph']
+  subjects: Map<string, Map<string, Quad[]>>
 }
 
 /**
@@ -178,6 +212,7 @@ export const RdfDetailsView = ({
   vocabularies,
   enableNavigation = true,
   enableContentNegotiation = false,
+  emitRdfa = false,
   literalRenderers,
   predicateRenderers,
   className,
@@ -263,7 +298,7 @@ export const RdfDetailsView = ({
       cancelled = true
     }
   }, [normalizedVocabularies.join('|')])
-  const groupedSubjects = useMemo(() => groupQuadsBySubject(quads), [quads])
+  const groupedGraphs = useMemo(() => groupQuadsByGraph(quads), [quads])
   const labelMap = useMemo(
     () => buildLabelMap([...vocabularyQuads, ...quads], normalizedPreferred),
     [vocabularyQuads, quads, normalizedPreferred],
@@ -273,8 +308,8 @@ export const RdfDetailsView = ({
     [vocabularyQuads, quads, normalizedPreferred],
   )
   const subjects = useMemo(
-    () => Array.from(groupedSubjects.keys()),
-    [groupedSubjects],
+    () => collectSubjects(groupedGraphs),
+    [groupedGraphs],
   )
   const selectedSubjectLabel = selectedSubject
     ? formatTerm(selectedSubject, namespaces, expandUris)
@@ -339,6 +374,9 @@ export const RdfDetailsView = ({
   }
 
   const viewerClass = ['rdf-details-view', className].filter(Boolean).join(' ')
+  const showGraphInfo =
+    isQuadBasedFormat(format) ||
+    quads.some((quad) => quad.graph.termType !== 'DefaultGraph')
 
   return (
     <div
@@ -355,7 +393,7 @@ export const RdfDetailsView = ({
           onShowAll={() => setSelectedSubject(null)}
         />
       ) : null}
-      {renderTableLayout(groupedSubjects, namespaces, {
+      {renderGraphSections(groupedGraphs, namespaces, {
         expandUris,
         preferredLanguages: normalizedPreferred,
         showDatatypes,
@@ -373,6 +411,8 @@ export const RdfDetailsView = ({
         metaMap,
         literalRenderers,
         predicateRenderers,
+        emitRdfa,
+        showGraphInfo,
       })}
     </div>
   )
@@ -408,28 +448,140 @@ const renderNamespaceList = (namespaces: NamespaceMap) => {
   )
 }
 
+const renderGraphSections = (
+  graphs: GraphGrouping[],
+  namespaces: NamespaceMap,
+  options: TableRenderOptions & { showGraphInfo: boolean },
+) => {
+  return graphs
+    .map(({ graphKey, graphTerm, subjects }) => {
+      const filteredSubjects = options.selectedSubject
+        ? new Map(
+            Array.from(subjects.entries()).filter(
+              ([subject]) => subject === options.selectedSubject,
+            ),
+          )
+        : subjects
+
+      if (filteredSubjects.size === 0) {
+        return null
+      }
+
+      const { showGraphInfo, ...tableOptions } = options
+      const graphLabel = formatGraphLabel(
+        graphTerm,
+        namespaces,
+        tableOptions.expandUris,
+      )
+
+      return (
+        <div
+          key={`graph-${graphKey}`}
+          className="graph-section"
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+        >
+          {showGraphInfo ? (
+            <Paragraph
+              data-size="sm"
+              className="graph-label"
+              aria-label={`Graph: ${graphLabel}`}
+              style={{ margin: 0 }}
+            >
+              Graph: <strong>{graphLabel}</strong>
+            </Paragraph>
+          ) : null}
+          {renderTableLayout(filteredSubjects, namespaces, tableOptions)}
+        </div>
+      )
+    })
+    .filter(Boolean)
+}
+
+const XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string'
+const RDF_LANG_STRING = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'
+
+type RdfaObjectAttributes = {
+  property?: string
+  rel?: string
+  resource?: string
+  content?: string
+  datatype?: string
+  lang?: string
+}
+
+/**
+ * Represent a term as an RDFa `resource` value (IRI for named nodes,
+ * `_:label` for blank nodes). Returns null for terms with no resource form.
+ */
+const toRdfaResource = (
+  term: Quad['subject'] | Quad['object'],
+): string | null => {
+  if (term.termType === 'NamedNode') {
+    return term.value
+  }
+  if (term.termType === 'BlankNode') {
+    return term.value.startsWith('_:') ? term.value : `_:${term.value}`
+  }
+  return null
+}
+
+/**
+ * Build the RDFa attributes describing a single object quad. Literals use
+ * `property` + `content` (plus `datatype`/`lang`); resources use `rel` +
+ * `resource` so the inner visual markup never affects the emitted triple.
+ */
+const buildObjectRdfaAttributes = (quad: Quad): RdfaObjectAttributes => {
+  const predicate = quad.predicate.value
+  const object = quad.object
+
+  if (object.termType === 'Literal') {
+    const attributes: RdfaObjectAttributes = {
+      property: predicate,
+      content: object.value,
+    }
+    const language = object.language
+    const datatype = object.datatype?.value
+    if (language) {
+      attributes.lang = language
+    } else if (
+      datatype &&
+      datatype !== XSD_STRING &&
+      datatype !== RDF_LANG_STRING
+    ) {
+      attributes.datatype = datatype
+    }
+    return attributes
+  }
+
+  const resource = toRdfaResource(object)
+  return resource ? { rel: predicate, resource } : { property: predicate }
+}
+
+/** RDFa subject attributes (`about`) for a subject section. */
+const buildSubjectRdfaAttributes = (
+  subjectTerm: Quad['subject'],
+): { about: string } | undefined => {
+  const about = toRdfaResource(subjectTerm)
+  return about ? { about } : undefined
+}
+
+/** Pick any quad's subject term from a subject's predicate map. */
+const getSubjectTerm = (
+  predicates: Map<string, Quad[]>,
+): Quad['subject'] | null => {
+  for (const quads of predicates.values()) {
+    const first = quads[0]
+    if (first) {
+      return first.subject
+    }
+  }
+  return null
+}
+
 const renderTableLayout = (
   subjects: Map<string, Map<string, Quad[]>>,
   namespaces: NamespaceMap,
-  options: {
-    expandUris: boolean
-    preferredLanguages: string[]
-    showImagesInline: boolean
-    showImageUrls: boolean
-    labelMap: Map<string, string>
-    enableNavigation: boolean
-    selectedSubject: string | null
-    onNavigate: (subject: string | null) => void
-    subjects: string[]
-    contentTypeCache: Map<string, ContentTypeHint>
-    metaMap: Map<string, string>
-    showDatatypes: boolean
-    showLanguageTags: boolean
-    literalRenderers?: Record<string, LiteralRenderer>
-    predicateRenderers?: Record<string, PredicateRenderer>
-    imagePredicateSet: Set<string>
-    predicateOrder: string[]
-  },
+  options: TableRenderOptions,
 ) => {
   const visibleSubjects = options.selectedSubject
     ? Array.from(subjects.entries()).filter(
@@ -448,60 +600,85 @@ const renderTableLayout = (
     options.predicateOrder.map((predicate, index) => [predicate, index]),
   )
 
-  return visibleSubjects.map(([subject, predicates]) => (
-    <Card key={subject}>
-      <CardBlock>
-        <Heading level={3} data-size="sm">
-          {formatTerm(subject, namespaces, options.expandUris)}
-        </Heading>
-        <Table border zebra className="properties-table" style={tableStyle}>
-          <Table.Body>
-            {Array.from(predicates.entries())
-              .map(([predicate, predicateQuads], originalIndex) => ({
-                predicate,
-                predicateQuads,
-                originalIndex,
-                orderIndex: predicateOrderMap.get(predicate),
-              }))
-              .sort((a, b) => {
-                const aExplicit = a.orderIndex != null
-                const bExplicit = b.orderIndex != null
-                if (aExplicit && bExplicit) {
-                  return a.orderIndex! - b.orderIndex!
-                }
-                if (aExplicit) {
-                  return -1
-                }
-                if (bExplicit) {
-                  return 1
-                }
-                return a.originalIndex - b.originalIndex
-              })
-              .map(({ predicate, predicateQuads }) => (
-                <Table.Row key={`${subject}-${predicate}`}>
-                  <Table.HeaderCell className="predicate-cell">
-                    {renderPredicateLabel(
-                      predicate,
-                      namespaces,
-                      options.expandUris,
-                      options.labelMap,
-                      options.metaMap,
-                    )}
-                  </Table.HeaderCell>
-                  <Table.Cell>
-                    {renderPredicateObjects(
-                      predicateQuads,
-                      namespaces,
-                      options,
-                    )}
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-          </Table.Body>
-        </Table>
-      </CardBlock>
-    </Card>
-  ))
+  return visibleSubjects.map(([subject, predicates]) => {
+    const card = (
+      <Card>
+        <CardBlock>
+          <Heading level={3} data-size="sm">
+            {formatTerm(subject, namespaces, options.expandUris)}
+          </Heading>
+          <Table border zebra className="properties-table" style={tableStyle}>
+            <Table.Body>
+              {Array.from(predicates.entries())
+                .map(([predicate, predicateQuads], originalIndex) => ({
+                  predicate,
+                  predicateQuads,
+                  originalIndex,
+                  orderIndex: predicateOrderMap.get(predicate),
+                }))
+                .sort((a, b) => {
+                  const aExplicit = a.orderIndex != null
+                  const bExplicit = b.orderIndex != null
+                  if (aExplicit && bExplicit) {
+                    return a.orderIndex! - b.orderIndex!
+                  }
+                  if (aExplicit) {
+                    return -1
+                  }
+                  if (bExplicit) {
+                    return 1
+                  }
+                  return a.originalIndex - b.originalIndex
+                })
+                .map(({ predicate, predicateQuads }) => (
+                  <Table.Row key={`${subject}-${predicate}`}>
+                    <Table.HeaderCell className="predicate-cell">
+                      {renderPredicateLabel(
+                        predicate,
+                        namespaces,
+                        options.expandUris,
+                        options.labelMap,
+                        options.metaMap,
+                      )}
+                    </Table.HeaderCell>
+                    <Table.Cell>
+                      {renderPredicateObjects(
+                        predicateQuads,
+                        namespaces,
+                        options,
+                      )}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+            </Table.Body>
+          </Table>
+        </CardBlock>
+      </Card>
+    )
+
+    if (!options.emitRdfa) {
+      return (
+        <div key={subject} style={{ display: 'contents' }}>
+          {card}
+        </div>
+      )
+    }
+
+    const subjectTerm = getSubjectTerm(predicates)
+    const subjectAttributes = subjectTerm
+      ? buildSubjectRdfaAttributes(subjectTerm)
+      : undefined
+    return (
+      <div
+        key={subject}
+        className="rdfa-subject"
+        style={{ display: 'contents' }}
+        {...subjectAttributes}
+      >
+        {card}
+      </div>
+    )
+  })
 }
 
 const computePredicateColumnWidth = (
@@ -551,6 +728,7 @@ const renderPredicateObjects = (
     literalRenderers?: Record<string, LiteralRenderer>
     predicateRenderers?: Record<string, PredicateRenderer>
     imagePredicateSet: Set<string>
+    emitRdfa: boolean
   },
 ) => {
   const imageQuads = predicateQuads.filter((quad) => isImageQuad(quad, options))
@@ -587,18 +765,37 @@ const renderPredicateObjects = (
             : []
         })()
       : imageQuads.map((quad, idx) => (
-          <div key={`${quad.subject.value}-${quad.predicate.value}-img-${idx}`}>
+          <div
+            key={`${quad.subject.value}-${quad.predicate.value}-img-${idx}`}
+            {...(options.emitRdfa ? buildObjectRdfaAttributes(quad) : {})}
+          >
             {renderObjectValue(quad, namespaces, options)}
           </div>
         ))
 
+  // The carousel collapses several image quads into one widget, so emit
+  // hidden RDFa markers to preserve those triples when RDFa is enabled.
+  const rdfaImageMarkers =
+    options.emitRdfa && options.showImagesInline && imageQuads.length > 1
+      ? imageQuads.map((quad, idx) => (
+          <span
+            key={`rdfa-img-${quad.predicate.value}-${idx}`}
+            hidden
+            {...buildObjectRdfaAttributes(quad)}
+          />
+        ))
+      : []
+
   const otherContent = otherQuads.map((quad, idx) => (
-    <div key={`${quad.subject.value}-${quad.predicate.value}-other-${idx}`}>
+    <div
+      key={`${quad.subject.value}-${quad.predicate.value}-other-${idx}`}
+      {...(options.emitRdfa ? buildObjectRdfaAttributes(quad) : {})}
+    >
       {renderObjectValue(quad, namespaces, options)}
     </div>
   ))
 
-  const combined = [...imageContent, ...otherContent]
+  const combined = [...imageContent, ...otherContent, ...rdfaImageMarkers]
   return combined.length ? combined : null
 }
 
@@ -658,7 +855,9 @@ const renderObjectValue = (
 
   const predicateRenderer = options.predicateRenderers?.[quad.predicate.value]
   if (predicateRenderer) {
-    return predicateRenderer(quad, {
+    const rendererOptions: PredicateRendererOptions & {
+      defaultRender: () => JSX.Element
+    } = {
       namespaces: namespaces,
       expandUris: options.expandUris,
       preferredLanguages: options.preferredLanguages,
@@ -670,25 +869,77 @@ const renderObjectValue = (
       subjects: options.subjects,
       contentTypeCache: options.contentTypeCache,
       defaultRender: defaultRender,
-    })
+    }
+
+    if (predicateRenderer.length <= 1) {
+      return (predicateRenderer as any)({
+        quad,
+        ...rendererOptions,
+      })
+    }
+
+    return predicateRenderer(quad, rendererOptions)
   }
 
   return defaultRender()
 }
 
-const groupQuadsBySubject = (
-  quads: Quad[],
-): Map<string, Map<string, Quad[]>> => {
-  return quads.reduce((acc, quad) => {
+const groupQuadsByGraph = (quads: Quad[]): GraphGrouping[] => {
+  const graphMap = quads.reduce((acc, quad) => {
+    const graphKey = getGraphKey(quad.graph)
+    const existing = acc.get(graphKey) ?? {
+      graphTerm: quad.graph,
+      subjects: new Map<string, Map<string, Quad[]>>(),
+    }
+
     const subjectKey = quad.subject.value
     const predicateKey = quad.predicate.value
-    const predicateMap = acc.get(subjectKey) ?? new Map<string, Quad[]>()
+    const predicateMap =
+      existing.subjects.get(subjectKey) ?? new Map<string, Quad[]>()
     const predicateQuads = predicateMap.get(predicateKey) ?? []
 
     predicateMap.set(predicateKey, [...predicateQuads, quad])
-    acc.set(subjectKey, predicateMap)
+    existing.subjects.set(subjectKey, predicateMap)
+    acc.set(graphKey, existing)
     return acc
-  }, new Map<string, Map<string, Quad[]>>())
+  }, new Map<string, { graphTerm: Quad['graph']; subjects: Map<string, Map<string, Quad[]>> }>())
+
+  return Array.from(graphMap.entries()).map(
+    ([graphKey, { graphTerm, subjects }]) => ({
+      graphKey,
+      graphTerm,
+      subjects,
+    }),
+  )
+}
+
+const collectSubjects = (graphs: GraphGrouping[]): string[] => {
+  const subjectSet = new Set<string>()
+  graphs.forEach(({ subjects }) => {
+    subjects.forEach((_, subject) => subjectSet.add(subject))
+  })
+  return Array.from(subjectSet)
+}
+
+const getGraphKey = (graph: Quad['graph']): string => {
+  if (graph.termType === 'DefaultGraph') {
+    return '@default'
+  }
+  return graph.value
+}
+
+const formatGraphLabel = (
+  graph: Quad['graph'],
+  namespaces: NamespaceMap,
+  expandUris: boolean,
+): string => {
+  if (graph.termType === 'DefaultGraph') {
+    return 'Default graph'
+  }
+  if (graph.termType === 'NamedNode') {
+    return formatTerm(graph.value, namespaces, expandUris)
+  }
+  return graph.value
 }
 
 const formatTerm = (
@@ -802,17 +1053,25 @@ const renderLiteralValue = (
 ): JSX.Element => {
   const datatypeKey =
     literal.datatype?.value ?? 'http://www.w3.org/2001/XMLSchema#string'
-  console.log('Literal datatype key:', datatypeKey)
   const literalRenderer = options.literalRenderers?.[datatypeKey]
   if (literalRenderer) {
-    console.log('Using custom literal renderer for datatype:', datatypeKey)
-    return literalRenderer(literal, quad, {
+    const rendererOptions: LiteralRendererOptions = {
       namespaces,
       expandUris: options.expandUris,
       preferredLanguages: options.preferredLanguages,
       showDatatypes: options.showDatatypes,
       showLanguageTags: options.showLanguageTags,
-    })
+    }
+
+    if (literalRenderer.length <= 1) {
+      return (literalRenderer as any)({
+        literal,
+        quad,
+        ...rendererOptions,
+      })
+    }
+
+    return literalRenderer(literal, quad, rendererOptions)
   }
 
   const lang = literal.language?.toLowerCase()
@@ -1224,6 +1483,10 @@ const renderPredicateLabel = (
   const meta = metaMap.get(value)
   const tooltip = meta ? `${value}\n${meta}` : value
   return <span title={tooltip}>{display}</span>
+}
+
+const isQuadBasedFormat = (format: RDFFormat): boolean => {
+  return format === 'trig' || format === 'n-quads'
 }
 
 const resolveRdfFormat = (url: string, contentType: string): RDFFormat => {

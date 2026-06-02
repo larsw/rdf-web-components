@@ -36,6 +36,18 @@ ex:alice foaf:name "Alice" ;
   ex:role "Owner" .
 `;
 
+const trigData = `
+@prefix ex: <http://example.org/> .
+
+ex:g1 {
+  ex:alice ex:name "Alice"@en .
+}
+
+{
+  ex:bob ex:name "Bob"@en .
+}
+`;
+
 const imageData = `
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix ex: <http://example.org/> .
@@ -131,6 +143,13 @@ foaf:mbox rdfs:label "email"@en .
     expect(headers[1]).toBe("exa:score");
   });
 
+  test("shows graph labels for quad-based formats", async () => {
+    render(<RdfDetailsView data={trigData} format="trig" />);
+
+    expect(await screen.findByLabelText(/Graph:\s*exa:g1/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Graph:\s*Default graph/i)).toBeInTheDocument();
+  });
+
   test("shows error state for invalid data", () => {
     render(<RdfDetailsView data="<bad" />);
     expect(screen.getByText(/Failed to parse RDF data/i)).toBeInTheDocument();
@@ -196,6 +215,55 @@ ex:alice ex:pic <http://example.org/pic.jpg> .`;
     expect(await screen.findByText(/application\/ld\+json/i)).toBeInTheDocument();
 
     globalThis.fetch = originalFetch;
+  });
+
+  test("emits RDFa attributes when emitRdfa is enabled", () => {
+    const { container } = render(<RdfDetailsView data={sampleData} emitRdfa />);
+
+    const subject = container.querySelector(
+      '[about="http://example.org/alice"]',
+    );
+    expect(subject).not.toBeNull();
+
+    const nameProperty = container.querySelector(
+      '[property="http://xmlns.com/foaf/0.1/name"]',
+    );
+    expect(nameProperty?.getAttribute("content")).toBe("Alice");
+    expect(nameProperty?.getAttribute("lang")).toBe("en");
+
+    const typeRelation = container.querySelector(
+      '[rel="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"]',
+    );
+    expect(typeRelation?.getAttribute("resource")).toBe(
+      "http://xmlns.com/foaf/0.1/Person",
+    );
+
+    const mboxRelation = container.querySelector(
+      '[rel="http://xmlns.com/foaf/0.1/mbox"]',
+    );
+    expect(mboxRelation?.getAttribute("resource")).toBe(
+      "mailto:alice@example.org",
+    );
+  });
+
+  test("does not emit RDFa attributes by default", () => {
+    const { container } = render(<RdfDetailsView data={sampleData} />);
+    expect(container.querySelector("[about]")).toBeNull();
+    expect(container.querySelector("[property]")).toBeNull();
+    expect(container.querySelector("[resource]")).toBeNull();
+  });
+
+  test("preserves RDFa triples for carouselled images", () => {
+    const { container } = render(<RdfDetailsView data={imageData} emitRdfa />);
+    const imageRelations = container.querySelectorAll(
+      '[rel="http://xmlns.com/foaf/0.1/depiction"]',
+    );
+    expect(imageRelations.length).toBe(2);
+    const resources = Array.from(imageRelations).map((node) =>
+      node.getAttribute("resource"),
+    );
+    expect(resources).toContain("https://picsum.photos/200/200?random=1");
+    expect(resources).toContain("https://picsum.photos/200/200?random=2");
   });
 
   test("renders image carousel links when showImageUrls is enabled", () => {

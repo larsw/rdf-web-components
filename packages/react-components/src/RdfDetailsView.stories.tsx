@@ -15,6 +15,7 @@ const meta: Meta<typeof RdfDetailsView> = {
     preferredLanguages: ["en"],
     showImagesInline: true,
     enableNavigation: true,
+    emitRdfa: false,
     vocabularies: [],
   },
 };
