@@ -81,13 +81,17 @@ jobs:
       - name: Build
         run: bun run --filter "${{ matrix.filter }}" build
 
-      - name: Configure npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted Publishing (OIDC): npm CLI >= 11.5.1 exchanges the GitHub
+      # id-token for a short-lived npm credential — no NPM_TOKEN secret needed.
+      # bun publish cannot do this, so the publish step uses the npm CLI.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
 
       - name: Publish
-        run: bun publish --access ${{ matrix.access }}
+        run: npm publish --access ${{ matrix.access }}
         working-directory: ${{ matrix.path }}
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
