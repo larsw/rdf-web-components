@@ -8,7 +8,6 @@ on:
 
 jobs:
   publish:
-    if: ${{ false }} # temporarily disabled; manual publish only
     runs-on: ubuntu-latest
     permissions:
       checks: write
@@ -82,13 +81,13 @@ jobs:
       - name: Build
         run: bun run --filter "${{ matrix.filter }}" build
 
-      # - name: Configure npm auth
-      #   run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-      #   env:
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish
         run: bun publish --access ${{ matrix.access }}
         working-directory: ${{ matrix.path }}
-        # env:
-        #   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
