@@ -1,37 +1,79 @@
-.rdf-details-view .literal {
-  color: var(--ds-color-neutral-text-default);
+/*
+ * RDF details view tokens.
+ *
+ * Values trace back to DESIGN.md (Blueprint v6 palette). Dark is the default
+ * theme: dark values apply whenever the view (or any ancestor) carries
+ * Blueprint's `bp6-dark` class. Light values are the unqualified defaults.
+ */
+
+.rdf-details-view {
+  --rdf-text: #1c2127; /* dark-gray1 */
+  --rdf-text-muted: #5f6b7c; /* gray1 */
+  --rdf-numeric: #0f6894; /* cerulean2 */
+  --rdf-date: #7c327c; /* violet2 */
+  --rdf-boolean: #935610; /* orange2 */
+  --rdf-accent: #215db0; /* blue2 */
+  --rdf-badge-surface: #edeff2; /* light-gray4 */
+  --rdf-badge-text: #5f6b7c; /* gray1 */
+  --rdf-border: rgba(17, 20, 24, 0.15);
+}
+
+.rdf-details-view.bp6-dark,
+.bp6-dark .rdf-details-view {
+  --rdf-text: #f6f7f9; /* light-gray5 */
+  --rdf-text-muted: #abb3bf; /* gray4 */
+  --rdf-numeric: #68c1ee; /* cerulean5 */
+  --rdf-date: #d69fd6; /* violet5 */
+  --rdf-boolean: #fbb360; /* orange5 */
+  --rdf-accent: #8abbff; /* blue5 */
+  --rdf-badge-surface: #2f343c; /* dark-gray3 */
+  --rdf-badge-text: #c5cbd3; /* gray5 */
+  --rdf-border: rgba(255, 255, 255, 0.2);
 }
 
 .rdf-details-view {
-  margin: 0 auto;
-  max-width: 500px;
+  width: 100%;
+}
+
+.rdf-details-view .literal {
+  color: var(--rdf-text);
 }
 
 .rdf-details-view .literal-value {
   font-variant-numeric: tabular-nums;
 }
 
+/* Non-color type cue; inherits the value's color, shape carries the signal. */
+.rdf-details-view .literal-type-icon {
+  margin-right: 0.3rem;
+  vertical-align: text-bottom;
+  opacity: 0.85;
+}
+
 .rdf-details-view .literal.numeric {
-  color: var(--ds-color-info-text-default);
+  color: var(--rdf-numeric);
 }
 
 .rdf-details-view .literal.date {
-  color: var(--ds-color-brand2-text-default);
+  color: var(--rdf-date);
 }
 
 .rdf-details-view .literal.boolean {
-  color: var(--ds-color-warning-text-default);
+  color: var(--rdf-boolean);
 }
 
 .rdf-details-view .literal.email {
-  color: var(--ds-color-accent-text-default);
+  color: var(--rdf-accent);
 }
 
 .rdf-details-view .lang-tag {
-  background: var(--ds-color-neutral-surface-tinted);
-  border: 1px solid var(--ds-color-neutral-border-subtle);
+  background: var(--rdf-badge-surface);
+  border: 1px solid var(--rdf-border);
   border-radius: 5px;
-  color: var(--ds-color-neutral-text-subtle);
+  color: var(--rdf-badge-text);
+  font-family:
+    'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Source Code Pro',
+    monospace;
   font-size: 0.7em;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -41,23 +83,34 @@
 }
 
 .rdf-details-view .uri-link {
-  color: var(--ds-color-accent-text-default);
+  color: var(--rdf-accent);
 }
 
 .rdf-details-view .content-type-hint {
-  color: var(--ds-color-neutral-text-subtle);
+  color: var(--rdf-text-muted);
   font-size: 0.9em;
   margin-left: 0.25rem;
 }
 
 .rdf-details-view .navigation-indicator {
-  color: var(--ds-color-accent-text-subtle);
+  color: var(--rdf-accent);
   font-weight: 600;
   margin-left: 0.25rem;
 }
 
 .rdf-details-view .resource-image {
-  border: 1px solid var(--ds-color-neutral-border-subtle);
+  border: 1px solid var(--rdf-border);
+}
+
+.rdf-details-view .resource-image-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--rdf-border);
+  border-radius: 6px;
+  color: var(--rdf-text-muted);
+  font-size: 0.85em;
 }
 
 .rdf-details-view .image-carousel {
@@ -80,7 +133,7 @@
 }
 
 .rdf-details-view .image-carousel-count {
-  color: var(--ds-color-neutral-text-subtle);
+  color: var(--rdf-text-muted);
   font-size: 0.85em;
 }
 
@@ -98,6 +151,100 @@
   width: var(--rdf-details-view-predicate-width, 18ch);
   white-space: normal;
   word-break: break-word;
+  font-weight: 600;
+}
+
+.rdf-details-view .datatype {
+  color: var(--rdf-text-muted);
+  font-family:
+    'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Source Code Pro',
+    monospace;
+  font-size: 0.8em;
+  margin-left: 0.35rem;
+}
+
+.rdf-details-view .rdf-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--rdf-text-muted);
+  font-size: 0.85rem;
+}
+
+.rdf-details-view .subject-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.rdf-details-view .subject-filter {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+.rdf-details-view .subject-count {
+  color: var(--rdf-text-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rdf-details-view .subject-toolbar-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.rdf-details-view .subject-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  margin: -0.4rem -0.5rem;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.rdf-details-view .subject-toggle:hover {
+  background: var(--rdf-badge-surface);
+}
+
+.rdf-details-view .subject-toggle:focus-visible {
+  outline: 2px solid var(--rdf-accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rdf-details-view .subject-toggle {
+    transition: none;
+  }
+  .rdf-details-view .bp6-spinner-animation {
+    animation: none;
+  }
+}
+
+.rdf-details-view .subject-chevron {
+  color: var(--rdf-text-muted);
+  flex: none;
+}
+
+.rdf-details-view .subject-title {
+  font-size: 1rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.rdf-details-view .subject-meta {
+  margin-left: auto;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .rdf-details-view .namespace-list {
@@ -122,7 +269,7 @@
 }
 
 .rdf-details-view .namespace-separator {
-  color: var(--ds-color-neutral-text-subtle);
+  color: var(--rdf-text-muted);
 }
 
 .rdf-details-view .namespace-item code {

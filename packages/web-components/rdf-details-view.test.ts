@@ -49,3 +49,44 @@ test("handles malformed data", () => {
   const viewer = new RDFDetailsView();
   expect(() => viewer.setData("<bad turtle", "turtle")).not.toThrow();
 });
+
+const largeTurtle = `@prefix ex: <http://example.org/> .
+ex:alpha ex:p "1" .
+ex:bravo ex:p "2" .
+ex:charlie ex:p "3" .
+ex:delta ex:p "4" .
+ex:echo ex:p "5" .
+ex:foxtrot ex:p "6" .
+ex:golf ex:p "7" .`;
+
+test("collapses subjects and shows a filter for a large graph", () => {
+  const viewer = new RDFDetailsView();
+  viewer.setData(largeTurtle, "turtle");
+  const root = viewer.shadowRoot;
+  expect(root.querySelector(".subject-filter")).not.toBeNull();
+  expect(root.querySelectorAll(".subject-toggle").length).toBe(7);
+  // Collapsed by default: no property tables rendered.
+  expect(root.querySelector(".properties-table")).toBeNull();
+});
+
+test("keeps a small graph expanded without a filter", () => {
+  const viewer = new RDFDetailsView();
+  viewer.setData(sampleTurtle, "turtle");
+  const root = viewer.shadowRoot;
+  expect(root.querySelector(".subject-filter")).toBeNull();
+  expect(root.querySelector(".properties-table")).not.toBeNull();
+});
+
+test("adds a non-color type glyph to typed literals", () => {
+  const viewer = new RDFDetailsView();
+  viewer.setData(
+    `@prefix ex: <http://example.org/> .
+ex:x ex:count 42 ;
+  ex:ok true .`,
+    "turtle",
+  );
+  const root = viewer.shadowRoot;
+  expect(root.querySelector(".literal-type-icon")).not.toBeNull();
+  // Boolean "true" carries a check glyph (unlikely to appear elsewhere).
+  expect(root.innerHTML).toContain("✓");
+});

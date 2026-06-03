@@ -4,15 +4,20 @@ import { createRoot } from "react-dom/client";
 import * as RDF from "@rdfjs/types";
 import { DataFactory, Writer, type Quad } from "n3";
 
-import {
-  Card,
-  CardBlock,
-  Heading,
-  Paragraph,
-  Switch,
-} from "@digdir/designsystemet-react";
-import "@digdir/designsystemet-css";
-import "@digdir/designsystemet-css/theme";
+import { Card, Classes, H1, H4, Switch } from "@blueprintjs/core";
+
+// Blueprint's stylesheet uses oklch() relative-color syntax that Bun's CSS
+// bundler can't yet parse. The dev server serves it statically (see
+// dev/server.ts); inject the <link>s at runtime so Bun's HTML bundler never
+// tries to resolve them as modules.
+if (typeof document !== "undefined") {
+  for (const href of ["/blueprint.css", "/blueprint-icons.css"]) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+}
 
 import type { LiteralRenderer, LiteralRendererOptions, PredicateRenderer, PredicateRendererOptions, RdfDetailsViewProps } from "../src";
 import { RdfDetailsView } from "../src";
@@ -322,8 +327,10 @@ function App() {
   const viewerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-color-scheme", colorScheme);
-    document.body.setAttribute("data-color-scheme", colorScheme);
+    const isDark = colorScheme === "dark";
+    document.body.classList.toggle(Classes.DARK, isDark);
+    document.body.style.background = isDark ? "#1c2127" : "#f6f7f9";
+    document.body.style.color = isDark ? "#f6f7f9" : "#1c2127";
   }, [colorScheme]);
 
   useEffect(() => {
@@ -362,10 +369,10 @@ function App() {
   return (
     <div
       style={{
-        margin: "var(--ds-size-7) auto",
+        margin: "3rem auto",
         maxWidth: "52rem",
-        paddingInline: "var(--ds-size-5)",
-        width: "%",
+        paddingInline: "1.5rem",
+        width: "100%",
       }}
     >
       <div
@@ -373,84 +380,68 @@ function App() {
           display: "flex",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "var(--ds-size-4)",
+          gap: "1rem",
         }}
       >
         <div style={{ flex: 1 }}>
-          <Heading level={1} data-size="lg">
-            RDF React Components
-          </Heading>
-          <Paragraph data-size="md" style={{ marginTop: "0.5rem" }}>
+          <H1>RDF React Components</H1>
+          <p className={Classes.RUNNING_TEXT} style={{ marginTop: "0.5rem" }}>
             Playground for the <em>RdfDetailsView</em> component.
-          </Paragraph>
+          </p>
         </div>
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "var(--ds-size-2)",
+            gap: "0.5rem",
           }}
         >
           <Switch
             label="Dark mode"
+            alignIndicator="end"
             checked={colorScheme === "dark"}
             onChange={(event) => {
               setColorScheme(event.currentTarget.checked ? "dark" : "light");
             }}
-            position="end"
-            value={"dark"}
           />
           <Switch
             label="Emit RDFa"
-            description="Annotate the view with RDFa and show the extracted Turtle"
+            alignIndicator="end"
             checked={emitRdfa}
             onChange={(event) => {
               setEmitRdfa(event.currentTarget.checked);
             }}
-            position="end"
-            value={"rdfa"}
           />
         </div>
       </div>
-      <Card style={{ marginTop: "var(--ds-size-6)" }}>
-        <CardBlock>
-          <div ref={viewerRef}>
-            <RdfDetailsView
-              {...viewerProps}
-              theme={colorScheme}
-              emitRdfa={emitRdfa}
-            />
-          </div>
-        </CardBlock>
+      <Card style={{ marginTop: "2rem" }}>
+        <div ref={viewerRef}>
+          <RdfDetailsView
+            {...viewerProps}
+            theme={colorScheme}
+            emitRdfa={emitRdfa}
+          />
+        </div>
       </Card>
       {emitRdfa ? (
-        <Card style={{ marginTop: "var(--ds-size-5)" }}>
-          <CardBlock>
-            <Heading level={2} data-size="sm">
-              Extracted RDFa (Turtle)
-            </Heading>
-            <Paragraph data-size="sm" style={{ marginTop: "0.25rem" }}>
-              Reconstructed from the RDFa attributes in the rendered markup
-              above.
-            </Paragraph>
-            <pre
-              aria-label="Extracted RDFa as Turtle"
-              style={{
-                marginTop: "var(--ds-size-3)",
-                padding: "var(--ds-size-3)",
-                borderRadius: "var(--ds-border-radius-md, 8px)",
-                background: "var(--ds-color-neutral-surface-tinted, #00000014)",
-                overflow: "auto",
-                maxHeight: "28rem",
-                fontFamily:
-                  "var(--ds-font-family-mono, ui-monospace, monospace)",
-                fontSize: "0.8125rem",
-                whiteSpace: "pre",
-              }}
-            >
-              {turtle || "# No triples extracted from the current view."}
-            </pre>
-          </CardBlock>
+        <Card style={{ marginTop: "1.5rem" }}>
+          <H4>Extracted RDFa (Turtle)</H4>
+          <p className={Classes.TEXT_SMALL} style={{ marginTop: "0.25rem" }}>
+            Reconstructed from the RDFa attributes in the rendered markup above.
+          </p>
+          <pre
+            aria-label="Extracted RDFa as Turtle"
+            className={Classes.CODE_BLOCK}
+            style={{
+              marginTop: "0.75rem",
+              overflow: "auto",
+              maxHeight: "28rem",
+              fontSize: "0.8125rem",
+              whiteSpace: "pre",
+            }}
+          >
+            {turtle || "# No triples extracted from the current view."}
+          </pre>
         </Card>
       ) : null}
     </div>

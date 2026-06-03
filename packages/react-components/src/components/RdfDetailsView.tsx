@@ -9,16 +9,17 @@ import {
 } from 'react'
 import { Literal, type Quad } from 'n3'
 import {
-  Alert,
   Button,
+  Callout,
   Card,
-  CardBlock,
-  Heading,
-  Link,
-  List,
-  Paragraph,
-  Table,
-} from '@digdir/designsystemet-react'
+  Classes,
+  H5,
+  H6,
+  HTMLTable,
+  Icon,
+  InputGroup,
+  Spinner,
+} from '@blueprintjs/core'
 import './rdf-details-view.css'
 import {
   extractNamespacesFromQuads,
@@ -150,6 +151,13 @@ export interface RdfDetailsViewProps {
    * Optional additional CSS class name for the component.
    */
   className?: string
+  /**
+   * When the number of subjects shown exceeds this, the view collapses each
+   * subject to its header by default and shows a filter field, so large graphs
+   * stay scannable. Subjects remain individually expandable. The default is 6.
+   * Single-subject and drilled-in views are always expanded.
+   */
+  collapseThreshold?: number
 }
 
 type TableRenderOptions = {
@@ -171,6 +179,10 @@ type TableRenderOptions = {
   imagePredicateSet: Set<string>
   predicateOrder: string[]
   emitRdfa: boolean
+  matchedSubjects: Set<string> | null
+  collapsible: boolean
+  isExpanded: (subject: string) => boolean
+  onToggleSubject: (subject: string) => void
 }
 
 type GraphGrouping = {
@@ -192,6 +204,15 @@ const DEFAULT_IMAGE_PREDICATES = [
   'http://xmlns.com/foaf/0.1/img',
   'http://xmlns.com/foaf/0.1/thumbnail',
 ]
+
+/** Human-readable names for the RDF formats, for error copy. */
+const FORMAT_LABELS: Record<string, string> = {
+  turtle: 'Turtle',
+  'n-triples': 'N-Triples',
+  'n-quads': 'N-Quads',
+  trig: 'TriG',
+  'json-ld': 'JSON-LD',
+}
 
 /**
  * Render RDF data in a structured details view.
@@ -216,10 +237,17 @@ export const RdfDetailsView = ({
   literalRenderers,
   predicateRenderers,
   className,
+  collapseThreshold = 6,
 }: RdfDetailsViewProps) => {
   const [error, setError] = useState<Error | null>(null)
   const [vocabularyQuads, setVocabularyQuads] = useState<Quad[]>([])
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
+  const [filterText, setFilterText] = useState('')
+  const [userExpanded, setUserExpanded] = useState<Map<string, boolean>>(
+    new Map(),
+  )
+  const [vocabLoading, setVocabLoading] = useState(false)
+  const [pendingContent, setPendingContent] = useState(0)
   const [contentTypeCache, setContentTypeCache] = useState(
     new Map<string, ContentTypeHint>(),
   )
@@ -267,28 +295,36 @@ export const RdfDetailsView = ({
     const loadVocabularies = async () => {
       if (!normalizedVocabularies.length || typeof fetch !== 'function') {
         setVocabularyQuads([])
+        setVocabLoading(false)
         return
       }
 
-      const loaded = await Promise.all(
-        normalizedVocabularies.map(async (url) => {
-          try {
-            const response = await fetch(url)
-            if (!response.ok) {
+      setVocabLoading(true)
+      try {
+        const loaded = await Promise.all(
+          normalizedVocabularies.map(async (url) => {
+            try {
+              const response = await fetch(url)
+              if (!response.ok) {
+                return [] as Quad[]
+              }
+              const contentType = response.headers.get('content-type') ?? ''
+              const format = resolveRdfFormat(url, contentType)
+              const text = await response.text()
+              return parseRdf(text, format)
+            } catch {
               return [] as Quad[]
             }
-            const contentType = response.headers.get('content-type') ?? ''
-            const format = resolveRdfFormat(url, contentType)
-            const text = await response.text()
-            return parseRdf(text, format)
-          } catch {
-            return [] as Quad[]
-          }
-        }),
-      )
+          }),
+        )
 
-      if (!cancelled) {
-        setVocabularyQuads(loaded.flat())
+        if (!cancelled) {
+          setVocabularyQuads(loaded.flat())
+        }
+      } finally {
+        if (!cancelled) {
+          setVocabLoading(false)
+        }
       }
     }
 
@@ -315,6 +351,51 @@ export const RdfDetailsView = ({
     ? formatTerm(selectedSubject, namespaces, expandUris)
     : null
 
+  // Progressive disclosure for large graphs: collapse subjects and offer a
+  // filter once the count crosses the threshold. Single-subject and drilled-in
+  // views stay on the plain, always-expanded path.
+  const totalSubjects = subjects.length
+  const collapsible = !selectedSubject && totalSubjects > 1
+  const manySubjects = collapsible && totalSubjects > collapseThreshold
+  const defaultExpanded = !manySubjects
+
+  const matchedSubjects = useMemo(() => {
+    const query = filterText.trim().toLowerCase()
+    if (!query) {
+      return null // null means "no filter active"
+    }
+    return new Set(
+      subjects.filter((subject) => {
+        const display = formatTerm(
+          subject,
+          namespaces,
+          expandUris,
+        ).toLowerCase()
+        const label = (labelMap.get(subject) ?? '').toLowerCase()
+        return (
+          subject.toLowerCase().includes(query) ||
+          display.includes(query) ||
+          label.includes(query)
+        )
+      }),
+    )
+  }, [filterText, subjects, namespaces, expandUris, labelMap])
+
+  const isExpanded = (subject: string) =>
+    selectedSubject === subject
+      ? true
+      : (userExpanded.get(subject) ?? defaultExpanded)
+
+  const toggleSubject = (subject: string) =>
+    setUserExpanded((prev) => {
+      const next = new Map(prev)
+      next.set(subject, !(prev.get(subject) ?? defaultExpanded))
+      return next
+    })
+
+  const setAllExpanded = (value: boolean) =>
+    setUserExpanded(new Map(subjects.map((subject) => [subject, value])))
+
   useEffect(() => {
     if (!enableContentNegotiation) {
       return
@@ -325,6 +406,7 @@ export const RdfDetailsView = ({
         continue
       }
       contentRequests.current.add(uri)
+      setPendingContent((count) => count + 1)
       void negotiateContentType(uri)
         .then((result) => {
           if (!result) {
@@ -339,41 +421,52 @@ export const RdfDetailsView = ({
         .catch(() => {
           contentRequests.current.delete(uri)
         })
+        .finally(() => {
+          setPendingContent((count) => Math.max(0, count - 1))
+        })
     }
   }, [enableContentNegotiation, quads, contentTypeCache])
 
+  const resolving = vocabLoading || pendingContent > 0
+
+  const viewerClass = [
+    'rdf-details-view',
+    theme === 'dark' ? Classes.DARK : null,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   if (error) {
     return (
-      <div
-        className={`rdf-details-view ${className ?? ''}`.trim()}
-        data-theme={theme}
-        data-color-scheme={theme}
-      >
-        <Alert data-color="danger">
-          <Heading level={3} data-size="sm">
-            Failed to parse RDF data
-          </Heading>
-          <Paragraph data-size="sm">{error.message}</Paragraph>
-        </Alert>
+      <div className={viewerClass} data-theme={theme}>
+        <Callout
+          intent="danger"
+          title={`Couldn't parse the data as ${FORMAT_LABELS[format] ?? format}`}
+        >
+          <p className={Classes.TEXT_SMALL}>
+            Check the syntax, or set the <code>format</code> to match your data.
+            The parser reported:
+          </p>
+          <pre
+            className={Classes.CODE_BLOCK}
+            style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}
+          >
+            {error.message}
+          </pre>
+        </Callout>
       </div>
     )
   }
 
   if (quads.length === 0) {
     return (
-      <div
-        className={`rdf-details-view ${className ?? ''}`.trim()}
-        data-theme={theme}
-        data-color-scheme={theme}
-      >
-        <Alert>
-          <Paragraph data-size="sm">No RDF data to display.</Paragraph>
-        </Alert>
+      <div className={viewerClass} data-theme={theme}>
+        <Callout title="No RDF data to display." />
       </div>
     )
   }
 
-  const viewerClass = ['rdf-details-view', className].filter(Boolean).join(' ')
   const showGraphInfo =
     isQuadBasedFormat(format) ||
     quads.some((quad) => quad.graph.termType !== 'DefaultGraph')
@@ -382,7 +475,6 @@ export const RdfDetailsView = ({
     <div
       className={viewerClass}
       data-theme={theme}
-      data-color-scheme={theme}
       style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
     >
       {showNamespaces && renderNamespaceList(namespaces)}
@@ -393,30 +485,92 @@ export const RdfDetailsView = ({
           onShowAll={() => setSelectedSubject(null)}
         />
       ) : null}
-      {renderGraphSections(groupedGraphs, namespaces, {
-        expandUris,
-        preferredLanguages: normalizedPreferred,
-        showDatatypes,
-        showLanguageTags,
-        showImagesInline,
-        showImageUrls,
-        imagePredicateSet,
-        predicateOrder: normalizedPredicateOrder,
-        labelMap,
-        enableNavigation,
-        selectedSubject,
-        onNavigate: setSelectedSubject,
-        subjects,
-        contentTypeCache,
-        metaMap,
-        literalRenderers,
-        predicateRenderers,
-        emitRdfa,
-        showGraphInfo,
-      })}
+      {resolving ? (
+        <div className="rdf-status" role="status" aria-live="polite">
+          <Spinner size={16} />
+          <span>Resolving labels…</span>
+        </div>
+      ) : null}
+      {manySubjects ? (
+        <SubjectToolbar
+          total={totalSubjects}
+          matched={matchedSubjects ? matchedSubjects.size : totalSubjects}
+          filterText={filterText}
+          onFilter={setFilterText}
+          onExpandAll={() => setAllExpanded(true)}
+          onCollapseAll={() => setAllExpanded(false)}
+        />
+      ) : null}
+      {matchedSubjects && matchedSubjects.size === 0 ? (
+        <Callout title={`No subjects match “${filterText.trim()}”`} />
+      ) : (
+        renderGraphSections(groupedGraphs, namespaces, {
+          expandUris,
+          preferredLanguages: normalizedPreferred,
+          showDatatypes,
+          showLanguageTags,
+          showImagesInline,
+          showImageUrls,
+          imagePredicateSet,
+          predicateOrder: normalizedPredicateOrder,
+          labelMap,
+          enableNavigation,
+          selectedSubject,
+          onNavigate: setSelectedSubject,
+          subjects,
+          contentTypeCache,
+          metaMap,
+          literalRenderers,
+          predicateRenderers,
+          emitRdfa,
+          showGraphInfo,
+          matchedSubjects,
+          collapsible,
+          isExpanded,
+          onToggleSubject: toggleSubject,
+        })
+      )}
     </div>
   )
 }
+
+const SubjectToolbar = ({
+  total,
+  matched,
+  filterText,
+  onFilter,
+  onExpandAll,
+  onCollapseAll,
+}: {
+  total: number
+  matched: number
+  filterText: string
+  onFilter: (value: string) => void
+  onExpandAll: () => void
+  onCollapseAll: () => void
+}) => (
+  <div className="subject-toolbar">
+    <InputGroup
+      className="subject-filter"
+      leftIcon="search"
+      placeholder="Filter subjects…"
+      value={filterText}
+      aria-label="Filter subjects"
+      onValueChange={onFilter}
+    />
+    <span className="subject-count">
+      {filterText.trim() ? `${matched} of ${total}` : `${total} subjects`}
+    </span>
+    <div className="subject-toolbar-actions">
+      <Button variant="minimal" size="small" onClick={onExpandAll}>
+        Expand all
+      </Button>
+      <Button variant="minimal" size="small" onClick={onCollapseAll}>
+        Collapse all
+      </Button>
+    </div>
+  </div>
+)
 
 const renderNamespaceList = (namespaces: NamespaceMap) => {
   if (namespaces.size === 0) {
@@ -425,25 +579,21 @@ const renderNamespaceList = (namespaces: NamespaceMap) => {
 
   return (
     <Card>
-      <CardBlock>
-        <Heading level={3} data-size="sm">
-          Namespaces
-        </Heading>
-        <List.Unordered className="namespace-list">
-          {Array.from(
-            namespaces.entries() as IterableIterator<[string, string]>,
-          ).map(([prefix, namespace]) => (
-            <List.Item key={prefix} className="namespace-item">
-              <span className="namespace-prefix">{prefix}</span>
-              <span className="namespace-separator" aria-hidden="true">
-                {' '}
-                →{' '}
-              </span>
-              <code>&lt;{namespace}&gt;</code>
-            </List.Item>
-          ))}
-        </List.Unordered>
-      </CardBlock>
+      <H6>Namespaces</H6>
+      <ul className="namespace-list">
+        {Array.from(
+          namespaces.entries() as IterableIterator<[string, string]>,
+        ).map(([prefix, namespace]) => (
+          <li key={prefix} className="namespace-item">
+            <span className="namespace-prefix">{prefix}</span>
+            <span className="namespace-separator" aria-hidden="true">
+              {' '}
+              →{' '}
+            </span>
+            <code>&lt;{namespace}&gt;</code>
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }
@@ -455,13 +605,16 @@ const renderGraphSections = (
 ) => {
   return graphs
     .map(({ graphKey, graphTerm, subjects }) => {
-      const filteredSubjects = options.selectedSubject
-        ? new Map(
-            Array.from(subjects.entries()).filter(
-              ([subject]) => subject === options.selectedSubject,
-            ),
-          )
-        : subjects
+      const filteredSubjects = new Map(
+        Array.from(subjects.entries()).filter(([subject]) => {
+          if (options.selectedSubject) {
+            return subject === options.selectedSubject
+          }
+          return options.matchedSubjects
+            ? options.matchedSubjects.has(subject)
+            : true
+        }),
+      )
 
       if (filteredSubjects.size === 0) {
         return null
@@ -481,14 +634,13 @@ const renderGraphSections = (
           style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
         >
           {showGraphInfo ? (
-            <Paragraph
-              data-size="sm"
-              className="graph-label"
+            <p
+              className={`${Classes.TEXT_SMALL} graph-label`}
               aria-label={`Graph: ${graphLabel}`}
               style={{ margin: 0 }}
             >
               Graph: <strong>{graphLabel}</strong>
-            </Paragraph>
+            </p>
           ) : null}
           {renderTableLayout(filteredSubjects, namespaces, tableOptions)}
         </div>
@@ -601,14 +753,44 @@ const renderTableLayout = (
   )
 
   return visibleSubjects.map(([subject, predicates]) => {
+    const subjectLabel = formatTerm(subject, namespaces, options.expandUris)
+    const expanded = options.collapsible ? options.isExpanded(subject) : true
+    const header = options.collapsible ? (
+      <button
+        type="button"
+        className="subject-toggle"
+        aria-expanded={expanded}
+        onClick={() => options.onToggleSubject(subject)}
+      >
+        <Icon
+          icon={expanded ? 'chevron-down' : 'chevron-right'}
+          aria-hidden
+          className="subject-chevron"
+        />
+        <span className="subject-title">{subjectLabel}</span>
+        {!expanded ? (
+          <span className={`subject-meta ${Classes.TEXT_MUTED}`}>
+            {predicates.size}{' '}
+            {predicates.size === 1 ? 'property' : 'properties'}
+          </span>
+        ) : null}
+      </button>
+    ) : (
+      <H5>{subjectLabel}</H5>
+    )
+
     const card = (
       <Card>
-        <CardBlock>
-          <Heading level={3} data-size="sm">
-            {formatTerm(subject, namespaces, options.expandUris)}
-          </Heading>
-          <Table border zebra className="properties-table" style={tableStyle}>
-            <Table.Body>
+        {header}
+        {expanded ? (
+          <HTMLTable
+            bordered
+            striped
+            compact
+            className="properties-table"
+            style={tableStyle}
+          >
+            <tbody>
               {Array.from(predicates.entries())
                 .map(([predicate, predicateQuads], originalIndex) => ({
                   predicate,
@@ -631,8 +813,8 @@ const renderTableLayout = (
                   return a.originalIndex - b.originalIndex
                 })
                 .map(({ predicate, predicateQuads }) => (
-                  <Table.Row key={`${subject}-${predicate}`}>
-                    <Table.HeaderCell className="predicate-cell">
+                  <tr key={`${subject}-${predicate}`}>
+                    <th className="predicate-cell">
                       {renderPredicateLabel(
                         predicate,
                         namespaces,
@@ -640,19 +822,19 @@ const renderTableLayout = (
                         options.labelMap,
                         options.metaMap,
                       )}
-                    </Table.HeaderCell>
-                    <Table.Cell>
+                    </th>
+                    <td>
                       {renderPredicateObjects(
                         predicateQuads,
                         namespaces,
                         options,
                       )}
-                    </Table.Cell>
-                  </Table.Row>
+                    </td>
+                  </tr>
                 ))}
-            </Table.Body>
-          </Table>
-        </CardBlock>
+            </tbody>
+          </HTMLTable>
+        ) : null}
       </Card>
     )
 
@@ -975,22 +1157,18 @@ const NavigationControls = ({
   }
 
   return (
-    <Card>
-      <CardBlock
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem',
-        }}
-      >
-        <Paragraph data-size="sm" style={{ margin: 0 }}>
-          Viewing: <strong>{selectedLabel ?? selectedSubject}</strong>
-        </Paragraph>
-        <Button variant="tertiary" onClick={onShowAll}>
-          Show all
-        </Button>
-      </CardBlock>
+    <Card
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '1rem',
+      }}
+    >
+      <p className={Classes.TEXT_SMALL} style={{ margin: 0 }}>
+        Viewing: <strong>{selectedLabel ?? selectedSubject}</strong>
+      </p>
+      <Button variant="minimal" onClick={onShowAll} text="Show all" />
     </Card>
   )
 }
@@ -1039,6 +1217,31 @@ const negotiateContentType = async (
   }
 }
 
+const isTruthyLiteral = (value: string) => {
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'true' || normalized === '1'
+}
+
+/**
+ * Leading icon that encodes a literal's type as a non-color cue, so date /
+ * number / boolean / email aren't distinguished by hue alone (WCAG 1.4.1).
+ * Inherits the value's color and is decorative (the value text carries the
+ * meaning for assistive tech).
+ */
+const LiteralTypeIcon = ({ kind, value }: { kind: string; value: string }) => {
+  const shared = {
+    size: 12,
+    className: 'literal-type-icon',
+    'aria-hidden': true,
+  } as const
+  if (kind === 'numeric') return <Icon icon="numerical" {...shared} />
+  if (kind === 'date') return <Icon icon="calendar" {...shared} />
+  if (kind === 'boolean')
+    return <Icon icon={isTruthyLiteral(value) ? 'tick' : 'cross'} {...shared} />
+  if (kind === 'email') return <Icon icon="envelope" {...shared} />
+  return null
+}
+
 const renderLiteralValue = (
   literal: Literal,
   namespaces: NamespaceMap,
@@ -1084,9 +1287,10 @@ const renderLiteralValue = (
 
   if (classification.kind === 'email') {
     return (
-      <Link href={`mailto:${value}`} className="literal email">
+      <a href={`mailto:${value}`} className="literal email">
+        <LiteralTypeIcon kind="email" value={value} />
         {value}
-      </Link>
+      </a>
     )
   }
 
@@ -1112,6 +1316,7 @@ const renderLiteralValue = (
     <span
       className={`literal ${classification.kind}${preferred ? ' preferred' : ''}`.trim()}
     >
+      <LiteralTypeIcon kind={classification.kind} value={value} />
       <span className="literal-value">{value}</span>
       {options.showLanguageTags && lang ? (
         <span className="lang-tag" aria-label={`Language ${lang}`}>
@@ -1170,17 +1375,17 @@ const renderUriLink = (
 
   if (uri.startsWith('mailto:')) {
     return (
-      <Link href={uri} className="uri email">
+      <a href={uri} className="uri email">
         {uri.replace('mailto:', '')}
-      </Link>
+      </a>
     )
   }
 
   if (uri.startsWith('tel:')) {
     return (
-      <Link href={uri} className="uri phone">
+      <a href={uri} className="uri phone">
         {uri.replace('tel:', '')}
-      </Link>
+      </a>
     )
   }
 
@@ -1199,7 +1404,7 @@ const renderUriLink = (
       {isNavigable ? (
         <span className="navigation-indicator" aria-hidden="true">
           {' '}
-          »
+          →
         </span>
       ) : null}
     </>
@@ -1207,7 +1412,8 @@ const renderUriLink = (
 
   const link = isNavigable ? (
     <Button
-      variant="tertiary"
+      variant="minimal"
+      size="small"
       className="uri-link"
       aria-label={`Navigate to ${displayValue}`}
       onClick={() => options.onNavigate(uri)}
@@ -1215,12 +1421,47 @@ const renderUriLink = (
       {label}
     </Button>
   ) : (
-    <Link href={uri} target="_blank" rel="noreferrer" className="uri-link">
+    <a href={uri} target="_blank" rel="noreferrer" className="uri-link">
       {label}
-    </Link>
+    </a>
   )
 
   return link
+}
+
+/**
+ * Image that swaps to a labelled placeholder when the source fails to load
+ * (dead URL, blocked host), instead of the browser's broken-image glyph.
+ */
+const ResourceImage = ({
+  uri,
+  alt,
+  className,
+  style,
+}: {
+  uri: string
+  alt: string
+  className?: string
+  style?: CSSProperties
+}) => {
+  const [errored, setErrored] = useState(false)
+  if (errored) {
+    return (
+      <span className="resource-image-fallback" style={style}>
+        <Icon icon="media" aria-hidden />
+        <span>Image unavailable</span>
+      </span>
+    )
+  }
+  return (
+    <img
+      src={uri}
+      alt={alt}
+      className={className}
+      style={style}
+      onError={() => setErrored(true)}
+    />
+  )
 }
 
 const renderUriValue = (
@@ -1247,9 +1488,9 @@ const renderUriValue = (
     <span className="resource">
       {isImage ? (
         <>
-          <Link href={uri} target="_blank" rel="noreferrer">
-            <img
-              src={uri}
+          <a href={uri} target="_blank" rel="noreferrer">
+            <ResourceImage
+              uri={uri}
               alt={displayValue}
               className="resource-image"
               style={{
@@ -1261,7 +1502,7 @@ const renderUriValue = (
                 objectFit: 'cover',
               }}
             />
-          </Link>
+          </a>
           {options.showImageUrls ? (
             <div className="image-carousel-link">{link}</div>
           ) : null}
@@ -1302,32 +1543,33 @@ const ImageCarousel = ({
   return (
     <div className="image-carousel">
       <a href={current} target="_blank" rel="noreferrer">
-        <img
-          src={current}
+        <ResourceImage
+          key={current}
+          uri={current}
           alt=""
           className="resource-image image-carousel-image"
         />
       </a>
       <div className="image-carousel-controls">
         <Button
-          variant="tertiary"
+          variant="minimal"
+          size="small"
           onClick={goPrev}
           disabled={total <= 1}
           aria-label="Previous image"
-        >
-          Prev
-        </Button>
+          text="Prev"
+        />
         <span className="image-carousel-count">
           {currentIndex + 1} / {total}
         </span>
         <Button
-          variant="tertiary"
+          variant="minimal"
+          size="small"
           onClick={goNext}
           disabled={total <= 1}
           aria-label="Next image"
-        >
-          Next
-        </Button>
+          text="Next"
+        />
         {showImageUrls ? (
           <div className="image-carousel-link">{renderLink(current)}</div>
         ) : null}

@@ -6,6 +6,20 @@ const baseUrl = `http://localhost:${port}`;
 
 console.log(`Starting React components playground on ${baseUrl}`);
 
+// Blueprint's compiled CSS uses oklch() relative-color syntax that Bun's CSS
+// bundler can't parse yet, so we serve it as a static stylesheet (the browser
+// handles the modern syntax fine) instead of importing it through the bundler.
+const blueprintCss: Record<string, string> = {
+  "/blueprint.css": Bun.resolveSync(
+    "@blueprintjs/core/lib/css/blueprint.css",
+    import.meta.dir,
+  ),
+  "/blueprint-icons.css": Bun.resolveSync(
+    "@blueprintjs/icons/lib/css/blueprint-icons.css",
+    import.meta.dir,
+  ),
+};
+
 Bun.serve({
   port,
   routes: {
@@ -13,6 +27,12 @@ Bun.serve({
   },
   fetch(req) {
     const url = new URL(req.url);
+    const cssPath = blueprintCss[url.pathname];
+    if (cssPath) {
+      return new Response(Bun.file(cssPath), {
+        headers: { "Content-Type": "text/css" },
+      });
+    }
     const vocabDescriptor = findVocabularyByRoute(url.pathname);
     if (vocabDescriptor) {
       return new Response(Bun.file(vocabDescriptor.filePath), {

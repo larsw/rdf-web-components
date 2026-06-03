@@ -32,6 +32,14 @@ export class RDFDetailsView extends HTMLElement {
   private parser: Parser;
   private config: RDFDetailsViewConfig;
   private currentSubject: string | null = null;
+  // Progressive disclosure for large graphs (mirrors the React component).
+  private subjectFilter = "";
+  private filterFocused = false;
+  private subjectExpanded = new Map<string, boolean>();
+  private static readonly COLLAPSE_THRESHOLD = 6;
+  // Async label/content resolution in flight (drives the status indicator).
+  private vocabResolving = false;
+  private pendingContent = 0;
   private loadedVocabularies: Set<string> = new Set();
   private contentTypeCache: Map<
     string,
@@ -65,7 +73,7 @@ export class RDFDetailsView extends HTMLElement {
       format: "turtle",
       showNamespaces: true,
       expandURIs: false,
-      theme: "light",
+      theme: "dark",
       layout: "table",
       preferredLanguages: ["en", "en-US", "en-GB"],
       vocabularies: [],
@@ -184,6 +192,20 @@ export class RDFDetailsView extends HTMLElement {
         ${content}
       </div>
     `;
+
+    // A full innerHTML swap blurs the filter input, so re-focus it after a
+    // filter-driven render and drop the caret at the end.
+    if (this.filterFocused) {
+      this.filterFocused = false;
+      const input = this.shadowRoot.querySelector(
+        ".subject-filter",
+      ) as HTMLInputElement | null;
+      if (input) {
+        input.focus();
+        const end = input.value.length;
+        input.setSelectionRange(end, end);
+      }
+    }
   }
 
   private scheduleRender() {
@@ -194,15 +216,27 @@ export class RDFDetailsView extends HTMLElement {
     });
   }
 
+  private static readonly FORMAT_LABELS: Record<string, string> = {
+    turtle: "Turtle",
+    "n-triples": "N-Triples",
+    "n-quads": "N-Quads",
+    trig: "TriG",
+    "json-ld": "JSON-LD",
+  };
+
   private renderError(error: Error) {
     const styles = this.getStyles();
     const imageClass = this.config.showImagesInline ? "" : " images-disabled";
+    const formatLabel =
+      RDFDetailsView.FORMAT_LABELS[this.config.format ?? "turtle"] ??
+      this.config.format;
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
       <div class="rdf-details-view ${this.config.theme}${imageClass}">
         <div class="error">
-          <h3>Error parsing RDF data:</h3>
-          <pre>${error.message}</pre>
+          <h3>Couldn't parse the data as ${this.escapeHtml(formatLabel ?? "RDF")}</h3>
+          <p>Check the syntax, or set the format to match your data. The parser reported:</p>
+          <pre>${this.escapeHtml(error.message)}</pre>
         </div>
       </div>
     `;
@@ -216,6 +250,10 @@ export class RDFDetailsView extends HTMLElement {
     }
 
     let html = '<div class="rdf-content">';
+
+    if (this.vocabResolving || this.pendingContent > 0) {
+      html += `<div class="rdf-status" role="status" aria-live="polite"><span class="rdf-spinner" aria-hidden="true"></span> Resolving labels…</div>`;
+    }
 
     if (this.config.showNamespaces) {
       html += this.renderNamespaces();
@@ -252,25 +290,105 @@ export class RDFDetailsView extends HTMLElement {
       return acc;
     }, new Map<string, Quad[]>());
 
-    const visibleSubjects =
-      this.currentSubject && subjects.has(this.currentSubject)
-        ? new Map([[this.currentSubject, subjects.get(this.currentSubject)!]])
-        : subjects;
+    const total = subjects.size;
+    const collapsible = !this.currentSubject && total > 1;
+    const many = collapsible && total > RDFDetailsView.COLLAPSE_THRESHOLD;
+    const defaultExpanded = !many;
 
-    const tables = Array.from(visibleSubjects.entries())
+    let entries = Array.from(subjects.entries());
+    const query = this.subjectFilter.trim().toLowerCase();
+    if (this.currentSubject && subjects.has(this.currentSubject)) {
+      entries = [[this.currentSubject, subjects.get(this.currentSubject)!]];
+    } else if (query) {
+      entries = entries.filter(([subjectValue]) => {
+        const label = this.getDisplayLabel(subjectValue).toLowerCase();
+        return (
+          subjectValue.toLowerCase().includes(query) || label.includes(query)
+        );
+      });
+    }
+
+    const toolbar = many
+      ? this.renderSubjectToolbar(total, entries.length, query)
+      : "";
+
+    if (query && entries.length === 0) {
+      return `${toolbar}<div class="empty">No subjects match "${this.escapeHtml(
+        this.subjectFilter.trim(),
+      )}"</div>`;
+    }
+
+    const tables = entries
       .map(([subjectValue, subjectQuads]) =>
-        this.renderSubjectTable(subjectValue, subjectQuads),
+        this.renderSubjectTable(
+          subjectValue,
+          subjectQuads,
+          collapsible,
+          this.isSubjectExpanded(subjectValue, defaultExpanded),
+        ),
       )
       .join("");
 
-    return `<div class="table-layout">${tables}</div>`;
+    return `${toolbar}<div class="table-layout">${tables}</div>`;
   }
 
-  private renderSubjectTable(subjectValue: string, quads: Quad[]): string {
+  private renderSubjectToolbar(
+    total: number,
+    matched: number,
+    query: string,
+  ): string {
+    const count = query ? `${matched} of ${total}` : `${total} subjects`;
+    return `
+      <div class="subject-toolbar">
+        <input
+          type="search"
+          class="subject-filter"
+          placeholder="Filter subjects…"
+          aria-label="Filter subjects"
+          value="${this.escapeHtml(this.subjectFilter)}"
+          oninput="this.getRootNode().host.setSubjectFilter(this.value)" />
+        <span class="subject-count">${count}</span>
+        <span class="subject-toolbar-actions">
+          <button class="nav-button" onclick="this.getRootNode().host.expandAllSubjects()">Expand all</button>
+          <button class="nav-button" onclick="this.getRootNode().host.collapseAllSubjects()">Collapse all</button>
+        </span>
+      </div>`;
+  }
+
+  private renderSubjectTable(
+    subjectValue: string,
+    quads: Quad[],
+    collapsible: boolean,
+    expanded: boolean,
+  ): string {
     const displaySubject = this.getDisplayLabel(subjectValue);
+    const predicateCount = new Set(quads.map((quad) => quad.predicate.value))
+      .size;
+
+    let header: string;
+    if (collapsible) {
+      const meta = expanded
+        ? ""
+        : `<span class="subject-meta">${predicateCount} ${
+            predicateCount === 1 ? "property" : "properties"
+          }</span>`;
+      header = `<button class="subject-toggle" aria-expanded="${expanded}" onclick="this.getRootNode().host.toggleSubject('${this.jsArg(
+        subjectValue,
+      )}')">
+        <span class="subject-chevron" aria-hidden="true">${expanded ? "▾" : "▸"}</span>
+        <span class="subject-title">${this.escapeHtml(displaySubject)}</span>
+        ${meta}
+      </button>`;
+    } else {
+      header = `<div class="subject-header">${this.escapeHtml(displaySubject)}</div>`;
+    }
+
+    if (!expanded) {
+      return `<div class="subject-table">${header}</div>`;
+    }
 
     let html = `<div class="subject-table">
-      <div class="subject-header">${this.escapeHtml(displaySubject)}</div>
+      ${header}
       <table class="properties-table">
         <thead>
           <tr>
@@ -349,48 +467,137 @@ export class RDFDetailsView extends HTMLElement {
     return div.innerHTML;
   }
 
+  /** Escape a value for use inside a single-quoted inline-handler argument. */
+  private jsArg(value: string): string {
+    return this.escapeHtml(value.replace(/\\/g, "\\\\").replace(/'/g, "\\'"));
+  }
+
+  private subjectIds(): string[] {
+    const subjects = new Set<string>();
+    for (const quad of this.store.getQuads(null, null, null, null)) {
+      subjects.add(quad.subject.value);
+    }
+    return Array.from(subjects);
+  }
+
+  private isLargeGraph(): boolean {
+    const total = this.subjectIds().length;
+    return (
+      !this.currentSubject && total > 1 && total > RDFDetailsView.COLLAPSE_THRESHOLD
+    );
+  }
+
+  private isSubjectExpanded(subject: string, defaultExpanded: boolean): boolean {
+    if (this.currentSubject === subject) return true;
+    const explicit = this.subjectExpanded.get(subject);
+    return explicit === undefined ? defaultExpanded : explicit;
+  }
+
+  /** Toggle a single subject's expanded state (inline-handler entry point). */
+  public toggleSubject(subject: string) {
+    const defaultExpanded = !this.isLargeGraph();
+    const current = this.subjectExpanded.get(subject) ?? defaultExpanded;
+    this.subjectExpanded.set(subject, !current);
+    this.scheduleRender();
+  }
+
+  /** Set the subject filter text (inline-handler entry point). */
+  public setSubjectFilter(value: string) {
+    this.subjectFilter = value;
+    this.filterFocused = true;
+    this.scheduleRender();
+  }
+
+  /** Expand every subject in the current dataset. */
+  public expandAllSubjects() {
+    for (const subject of this.subjectIds()) {
+      this.subjectExpanded.set(subject, true);
+    }
+    this.scheduleRender();
+  }
+
+  /** Collapse every subject in the current dataset. */
+  public collapseAllSubjects() {
+    for (const subject of this.subjectIds()) {
+      this.subjectExpanded.set(subject, false);
+    }
+    this.scheduleRender();
+  }
+
   private getStyles(): string {
     return `
+      /*
+       * Theme tokens mirror @sral/react-rdf-components (Blueprint v6 palette;
+       * see DESIGN.md). Dark is the default; the host's "theme" attribute
+       * switches to light. Values trace back to Blueprint's own palette so the
+       * two renderings match.
+       */
+      :host {
+        --rdf-bg: #1c2127;           /* dark-gray1 */
+        --rdf-surface: #2f343c;      /* dark-gray3 */
+        --rdf-border: #404854;       /* dark-gray5 */
+        --rdf-text: #f6f7f9;         /* light-gray5 */
+        --rdf-text-muted: #abb3bf;   /* gray4 */
+        --rdf-accent: #8abbff;       /* blue5 */
+        --rdf-numeric: #68c1ee;      /* cerulean5 */
+        --rdf-date: #d69fd6;         /* violet5 */
+        --rdf-boolean: #fbb360;      /* orange5 */
+        --rdf-badge-surface: #2f343c;
+        --rdf-error-bg: rgba(205, 66, 70, 0.15);
+        --rdf-error-border: rgba(205, 66, 70, 0.5);
+        --rdf-error-text: #fa999c;   /* red5 */
+      }
+
+      :host([theme="light"]) {
+        --rdf-bg: #ffffff;
+        --rdf-surface: #f6f7f9;      /* light-gray5 */
+        --rdf-border: #d3d8de;       /* light-gray1 */
+        --rdf-text: #1c2127;         /* dark-gray1 */
+        --rdf-text-muted: #5f6b7c;   /* gray1 */
+        --rdf-accent: #215db0;       /* blue2 */
+        --rdf-numeric: #0f6894;      /* cerulean2 */
+        --rdf-date: #7c327c;         /* violet2 */
+        --rdf-boolean: #935610;      /* orange2 */
+        --rdf-badge-surface: #edeff2; /* light-gray4 */
+        --rdf-error-bg: rgba(205, 66, 70, 0.08);
+        --rdf-error-border: rgba(205, 66, 70, 0.35);
+        --rdf-error-text: #cd4246;   /* red3 */
+      }
+
       .rdf-details-view {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 14px;
         line-height: 1.5;
         padding: 1rem;
-        border: 1px solid #ddd;
+        border: 1px solid var(--rdf-border);
         border-radius: 8px;
-        background: #fff;
-        color: #333;
+        background: var(--rdf-bg);
+        color: var(--rdf-text);
         overflow-x: auto;
       }
 
-      .rdf-details-view.dark {
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border-color: #404040;
-      }
-
       .error {
-        background: #fee;
-        border: 1px solid #fcc;
+        background: var(--rdf-error-bg);
+        border: 1px solid var(--rdf-error-border);
         padding: 1rem;
         border-radius: 4px;
-        color: #c33;
+        color: var(--rdf-error-text);
       }
 
       .error h3 {
         margin: 0 0 0.5rem 0;
-        color: #a00;
+        color: var(--rdf-error-text);
       }
 
       .error pre {
         margin: 0;
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-family: 'SF Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
         white-space: pre-wrap;
       }
 
       .empty {
         text-align: center;
-        color: #999;
+        color: var(--rdf-text-muted);
         font-style: italic;
         padding: 2rem;
       }
@@ -398,21 +605,13 @@ export class RDFDetailsView extends HTMLElement {
       .namespaces {
         margin-bottom: 1.5rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid #eee;
-      }
-
-      .dark .namespaces {
-        border-bottom-color: #404040;
+        border-bottom: 1px solid var(--rdf-border);
       }
 
       .namespaces h3 {
         margin: 0 0 0.5rem 0;
         font-size: 1rem;
-        color: #666;
-      }
-
-      .dark .namespaces h3 {
-        color: #999;
+        color: var(--rdf-text-muted);
       }
 
       .namespaces ul {
@@ -427,11 +626,7 @@ export class RDFDetailsView extends HTMLElement {
 
       .prefix {
         font-weight: bold;
-        color: #0066cc;
-      }
-
-      .dark .prefix {
-        color: #4fc3f7;
+        color: var(--rdf-accent);
       }
 
       /* Navigation Controls */
@@ -441,20 +636,15 @@ export class RDFDetailsView extends HTMLElement {
         gap: 1rem;
         margin-bottom: 1.5rem;
         padding: 0.75rem 1rem;
-        background: #f8f9fa;
+        background: var(--rdf-surface);
         border-radius: 6px;
-        border: 1px solid #e9ecef;
-      }
-
-      .dark .navigation-controls {
-        background: #2a2a2a;
-        border-color: #404040;
+        border: 1px solid var(--rdf-border);
       }
 
       .nav-button {
-        background: #0066cc;
-        color: white;
-        border: none;
+        background: transparent;
+        color: var(--rdf-accent);
+        border: 1px solid var(--rdf-border);
         padding: 0.5rem 1rem;
         border-radius: 4px;
         cursor: pointer;
@@ -463,25 +653,12 @@ export class RDFDetailsView extends HTMLElement {
       }
 
       .nav-button:hover {
-        background: #0052a3;
-      }
-
-      .dark .nav-button {
-        background: #4fc3f7;
-        color: #1e1e1e;
-      }
-
-      .dark .nav-button:hover {
-        background: #29b6f6;
+        background: var(--rdf-badge-surface);
       }
 
       .current-subject {
         font-weight: 500;
-        color: #666;
-      }
-
-      .dark .current-subject {
-        color: #999;
+        color: var(--rdf-text-muted);
       }
 
       /* Table Layout Styles */
@@ -492,27 +669,135 @@ export class RDFDetailsView extends HTMLElement {
       }
 
       .subject-table {
-        border: 1px solid #e0e0e0;
+        border: 1px solid var(--rdf-border);
         border-radius: 8px;
         overflow: hidden;
       }
 
-      .dark .subject-table {
-        border-color: #404040;
-      }
-
       .subject-header {
-        background: #f5f5f5;
+        background: var(--rdf-surface);
         padding: 1rem;
         font-weight: bold;
-        color: #0066cc;
-        border-bottom: 1px solid #e0e0e0;
+        color: var(--rdf-accent);
+        border-bottom: 1px solid var(--rdf-border);
       }
 
-      .dark .subject-header {
-        background: #2a2a2a;
-        color: #4fc3f7;
-        border-bottom-color: #404040;
+      /* Async resolution status */
+      .rdf-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        color: var(--rdf-text-muted);
+        font-size: 0.85rem;
+      }
+
+      .rdf-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--rdf-border);
+        border-top-color: var(--rdf-accent);
+        border-radius: 50%;
+        animation: rdf-spin 0.7s linear infinite;
+      }
+
+      @keyframes rdf-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .rdf-spinner {
+          animation: none;
+          border-top-color: var(--rdf-border);
+          opacity: 0.6;
+        }
+      }
+
+      /* Large-graph controls */
+      .subject-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .subject-filter {
+        flex: 1 1 16rem;
+        min-width: 12rem;
+        padding: 0.4rem 0.6rem;
+        font: inherit;
+        color: var(--rdf-text);
+        background: var(--rdf-bg);
+        border: 1px solid var(--rdf-border);
+        border-radius: 4px;
+      }
+
+      .subject-filter:focus {
+        outline: 2px solid var(--rdf-accent);
+        outline-offset: 1px;
+      }
+
+      .subject-count {
+        color: var(--rdf-text-muted);
+        font-size: 0.85rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .subject-toolbar-actions {
+        display: flex;
+        gap: 0.25rem;
+        margin-left: auto;
+      }
+
+      /* Collapsible subject header (replaces the static header when many) */
+      .subject-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 1rem;
+        background: var(--rdf-surface);
+        border: none;
+        border-bottom: 1px solid var(--rdf-border);
+        cursor: pointer;
+        color: var(--rdf-accent);
+        font: inherit;
+        font-weight: bold;
+        text-align: left;
+      }
+
+      .subject-toggle[aria-expanded="false"] {
+        border-bottom: none;
+      }
+
+      .subject-toggle:hover {
+        /* Theme-neutral tint that reads on both light and dark surfaces. */
+        box-shadow: inset 0 0 0 100px rgba(128, 128, 128, 0.12);
+      }
+
+      .subject-toggle:focus-visible {
+        outline: 2px solid var(--rdf-accent);
+        outline-offset: -2px;
+      }
+
+      .subject-chevron {
+        color: var(--rdf-text-muted);
+        flex: none;
+        font-size: 0.8em;
+      }
+
+      .subject-title {
+        word-break: break-word;
+      }
+
+      .subject-meta {
+        margin-left: auto;
+        font-weight: 400;
+        font-size: 0.8rem;
+        color: var(--rdf-text-muted);
       }
 
       .properties-table {
@@ -522,28 +807,18 @@ export class RDFDetailsView extends HTMLElement {
       }
 
       .properties-table th {
-        background: #fafafa;
+        background: var(--rdf-surface);
         padding: 0.75rem 1rem;
         text-align: left;
         font-weight: 600;
-        color: #666;
-        border-bottom: 2px solid #e0e0e0;
-      }
-
-      .dark .properties-table th {
-        background: #2a2a2a;
-        color: #999;
-        border-bottom-color: #404040;
+        color: var(--rdf-text-muted);
+        border-bottom: 2px solid var(--rdf-border);
       }
 
       .properties-table td {
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--rdf-border);
         vertical-align: top;
-      }
-
-      .dark .properties-table td {
-        border-bottom-color: #333;
       }
 
       .property-cell {
@@ -558,7 +833,7 @@ export class RDFDetailsView extends HTMLElement {
 
       /* Value type specific styles */
       .uri {
-        color: #0066cc;
+        color: var(--rdf-accent);
         text-decoration: none;
       }
 
@@ -566,14 +841,10 @@ export class RDFDetailsView extends HTMLElement {
         text-decoration: underline;
       }
 
-      .dark .uri {
-        color: #4fc3f7;
-      }
-
       .uri-link {
         background: none;
         border: none;
-        color: #0066cc;
+        color: var(--rdf-accent);
         text-decoration: none;
         cursor: pointer;
         padding: 0;
@@ -583,10 +854,6 @@ export class RDFDetailsView extends HTMLElement {
 
       .uri-link:hover {
         text-decoration: underline;
-      }
-
-      .dark .uri-link {
-        color: #4fc3f7;
       }
 
       .uri-link.navigable {
@@ -600,62 +867,42 @@ export class RDFDetailsView extends HTMLElement {
       }
 
       .literal {
-        color: #009900;
+        color: var(--rdf-text);
       }
 
-      .dark .literal {
-        color: #81c784;
+      /* Non-color type cue; inherits the value's color, shape carries signal. */
+      .literal-type-icon {
+        margin-right: 0.3rem;
+        font-size: 0.85em;
+        opacity: 0.85;
       }
 
       .literal.numeric {
-        color: #e91e63;
+        color: var(--rdf-numeric);
         font-weight: 500;
-      }
-
-      .dark .literal.numeric {
-        color: #f48fb1;
+        font-variant-numeric: tabular-nums;
       }
 
       .literal.date {
-        color: #9c27b0;
+        color: var(--rdf-date);
         font-weight: 500;
       }
 
-      .dark .literal.date {
-        color: #ce93d8;
-      }
-
       .literal.boolean {
-        color: #ff9800;
+        color: var(--rdf-boolean);
         font-weight: 600;
       }
 
-      .dark .literal.boolean {
-        color: #ffcc02;
-      }
-
       .literal.email, .uri.email {
-        color: #2196f3;
-      }
-
-      .dark .literal.email, .dark .uri.email {
-        color: #64b5f6;
+        color: var(--rdf-accent);
       }
 
       .uri.phone {
-        color: #4caf50;
-      }
-
-      .dark .uri.phone {
-        color: #81c784;
+        color: var(--rdf-accent);
       }
 
       .term {
-        color: #333;
-      }
-
-      .dark .term {
-        color: #d4d4d4;
+        color: var(--rdf-text);
       }
 
       /* Image display */
@@ -670,7 +917,7 @@ export class RDFDetailsView extends HTMLElement {
         max-width: 200px;
         max-height: 150px;
         border-radius: 4px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--rdf-border);
         object-fit: cover;
         transition: transform 0.2s ease;
       }
@@ -680,8 +927,23 @@ export class RDFDetailsView extends HTMLElement {
         cursor: pointer;
       }
 
-      .dark .resource-image {
-        border-color: #404040;
+      .resource-image-fallback {
+        display: none;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px dashed var(--rdf-border);
+        border-radius: 6px;
+        color: var(--rdf-text-muted);
+        font-size: 0.85em;
+      }
+
+      .resource-image-wrap.img-failed .resource-image {
+        display: none;
+      }
+
+      .resource-image-wrap.img-failed .resource-image-fallback {
+        display: inline-flex;
       }
 
       /* When images are disabled inline */
@@ -696,22 +958,27 @@ export class RDFDetailsView extends HTMLElement {
         font-style: italic;
       }
 
+      /* Content-type chips: full thin tinted border (no side-stripe). */
       .rdf-resource {
-        border-left: 3px solid #2196f3;
-        padding-left: 0.25rem;
-      }
-
-      .dark .rdf-resource {
-        border-left-color: #64b5f6;
+        border: 1px solid var(--rdf-accent);
+        border-radius: 4px;
+        padding: 0 0.35rem;
       }
 
       .html-resource {
-        border-left: 3px solid #ff9800;
-        padding-left: 0.25rem;
+        border: 1px solid var(--rdf-boolean);
+        border-radius: 4px;
+        padding: 0 0.35rem;
       }
 
-      .dark .html-resource {
-        border-left-color: #ffcc02;
+      @media (prefers-reduced-motion: reduce) {
+        .resource-image,
+        .nav-button {
+          transition: none;
+        }
+        .resource-image:hover {
+          transform: none;
+        }
       }
 
       /* Responsive design */
@@ -843,22 +1110,28 @@ export class RDFDetailsView extends HTMLElement {
     if (!this.config.vocabularies || this.config.vocabularies.length === 0)
       return;
 
+    // Only load vocabularies that haven't been loaded yet
+    const vocabulariesToLoad = this.config.vocabularies.filter(
+      (url) => url.trim() && !this.loadedVocabularies.has(url.trim()),
+    );
+
+    if (vocabulariesToLoad.length === 0) {
+      return; // No new vocabularies to load
+    }
+
+    // Show the resolving indicator while labels load, then re-render so the
+    // resolved labels replace the prefixed URIs (no silent reflow).
+    this.vocabResolving = true;
+    this.scheduleRender();
     try {
-      // Only load vocabularies that haven't been loaded yet
-      const vocabulariesToLoad = this.config.vocabularies.filter(
-        (url) => url.trim() && !this.loadedVocabularies.has(url.trim()),
-      );
-
-      if (vocabulariesToLoad.length === 0) {
-        return; // No new vocabularies to load
-      }
-
-      // Load each new vocabulary
       for (const vocabUrl of vocabulariesToLoad) {
         await this.loadVocabulary(vocabUrl.trim());
       }
     } catch (error) {
       console.warn("Error loading vocabularies:", error);
+    } finally {
+      this.vocabResolving = false;
+      this.scheduleRender();
     }
   }
 
@@ -908,8 +1181,6 @@ export class RDFDetailsView extends HTMLElement {
 
       // Mark this vocabulary as loaded
       this.loadedVocabularies.add(url);
-
-      console.log(`Loaded vocabulary from ${url}: ${quads.length} triples`);
     } catch (error) {
       if (
         error instanceof TypeError &&
@@ -1003,11 +1274,17 @@ export class RDFDetailsView extends HTMLElement {
     return `<span class="term">${this.escapeHtml(value)}</span>`;
   }
 
+  // Leading glyph so a literal's type is conveyed by shape, not hue alone
+  // (WCAG 1.4.1). Mirrors the React component's Blueprint type icons.
+  private typeGlyph(glyph: string): string {
+    return `<span class="literal-type-icon" aria-hidden="true">${glyph}</span>`;
+  }
+
   private renderLiteralValue(value: string): string {
     // Check if it's a number
     const numericValue = parseFloat(value);
     if (!isNaN(numericValue) && isFinite(numericValue)) {
-      return `<span class="literal numeric" title="Numeric value">${this.escapeHtml(value)}</span>`;
+      return `<span class="literal numeric" title="Numeric value">${this.typeGlyph("#")}${this.escapeHtml(value)}</span>`;
     }
 
     // Check if it's a date
@@ -1015,19 +1292,20 @@ export class RDFDetailsView extends HTMLElement {
     if (dateRegex.test(value)) {
       const date = new Date(value);
       if (!isNaN(date.getTime())) {
-        return `<span class="literal date" title="Date: ${date.toLocaleString()}">${this.escapeHtml(value)}</span>`;
+        return `<span class="literal date" title="Date: ${date.toLocaleString()}">${this.typeGlyph("▤")}${this.escapeHtml(value)}</span>`;
       }
     }
 
     // Check if it's a boolean
     if (value === "true" || value === "false") {
-      return `<span class="literal boolean">${this.escapeHtml(value)}</span>`;
+      const glyph = value === "true" ? "✓" : "✗";
+      return `<span class="literal boolean">${this.typeGlyph(glyph)}${this.escapeHtml(value)}</span>`;
     }
 
     // Check if it's an email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (emailRegex.test(value)) {
-      return `<a href="mailto:${this.escapeHtml(value)}" class="literal email">${this.escapeHtml(value)}</a>`;
+      return `<a href="mailto:${this.escapeHtml(value)}" class="literal email">${this.typeGlyph("✉")}${this.escapeHtml(value)}</a>`;
     }
 
     // Default literal
@@ -1130,8 +1408,13 @@ export class RDFDetailsView extends HTMLElement {
     let imageHtml = "";
 
     if (this.config.showImagesInline) {
-      imageHtml = `<img src="${this.escapeHtml(uri)}" alt="Resource image" class="resource-image" 
-                   onerror="this.style.display='none';" loading="lazy">`;
+      // On load failure, swap to a labelled placeholder instead of the
+      // browser's broken-image glyph (mirrors the React ResourceImage).
+      imageHtml = `<span class="resource-image-wrap">
+                   <img src="${this.escapeHtml(uri)}" alt="Resource image" class="resource-image"
+                   onerror="this.closest('.resource-image-wrap').classList.add('img-failed')" loading="lazy">
+                   <span class="resource-image-fallback" aria-hidden="true">▦ Image unavailable</span>
+                 </span>`;
     }
 
     const linkHtml =
@@ -1198,13 +1481,16 @@ export class RDFDetailsView extends HTMLElement {
     }
     if (!this.config.enableContentNegotiation) return;
 
+    this.pendingContent++;
+    this.scheduleRender();
     try {
       const result = await this.checkContentTypes(uri);
       this.contentTypeCache.set(uri, result);
-      // Schedule a re-render to batch updates
-      this.scheduleRender();
     } catch (error) {
       // Silently fail for content negotiation
+    } finally {
+      this.pendingContent = Math.max(0, this.pendingContent - 1);
+      this.scheduleRender();
     }
   }
 
