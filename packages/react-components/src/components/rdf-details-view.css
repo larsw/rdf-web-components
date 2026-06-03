@@ -43,6 +43,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Non-color type cue; inherits the value's color, shape carries the signal. */
+.rdf-details-view .literal-type-icon {
+  margin-right: 0.3rem;
+  vertical-align: text-bottom;
+  opacity: 0.85;
+}
+
 .rdf-details-view .literal.numeric {
   color: var(--rdf-numeric);
 }
@@ -93,6 +100,17 @@
 
 .rdf-details-view .resource-image {
   border: 1px solid var(--rdf-border);
+}
+
+.rdf-details-view .resource-image-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--rdf-border);
+  border-radius: 6px;
+  color: var(--rdf-text-muted);
+  font-size: 0.85em;
 }
 
 .rdf-details-view .image-carousel {

@@ -163,7 +163,10 @@ foaf:mbox rdfs:label "email"@en .
 
   test('shows error state for invalid data', () => {
     render(<RdfDetailsView data="<bad" />)
-    expect(screen.getByText(/Failed to parse RDF data/i)).toBeInTheDocument()
+    // Framed copy names the format and keeps the raw parser message.
+    expect(
+      screen.getByText(/Couldn't parse the data as Turtle/i),
+    ).toBeInTheDocument()
   })
 
   test('shows empty state when there is no data', () => {
@@ -346,6 +349,21 @@ foaf:name rdfs:label "Name"@en .`,
     )
 
     globalThis.fetch = originalFetch
+  })
+
+  test('renders non-color type icons for typed literals', () => {
+    const data = `@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:x ex:count 42 ;
+  ex:when "2024-01-01"^^xsd:date ;
+  ex:ok true ;
+  ex:contact "person@example.org" .`
+
+    const { container } = render(<RdfDetailsView data={data} />)
+    expect(container.querySelector('[data-icon="numerical"]')).not.toBeNull()
+    expect(container.querySelector('[data-icon="calendar"]')).not.toBeNull()
+    expect(container.querySelector('[data-icon="tick"]')).not.toBeNull()
+    expect(container.querySelector('[data-icon="envelope"]')).not.toBeNull()
   })
 
   test('does not show the filter toolbar for a small graph', () => {

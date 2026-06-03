@@ -216,15 +216,27 @@ export class RDFDetailsView extends HTMLElement {
     });
   }
 
+  private static readonly FORMAT_LABELS: Record<string, string> = {
+    turtle: "Turtle",
+    "n-triples": "N-Triples",
+    "n-quads": "N-Quads",
+    trig: "TriG",
+    "json-ld": "JSON-LD",
+  };
+
   private renderError(error: Error) {
     const styles = this.getStyles();
     const imageClass = this.config.showImagesInline ? "" : " images-disabled";
+    const formatLabel =
+      RDFDetailsView.FORMAT_LABELS[this.config.format ?? "turtle"] ??
+      this.config.format;
     this.shadowRoot.innerHTML = `
       <style>${styles}</style>
       <div class="rdf-details-view ${this.config.theme}${imageClass}">
         <div class="error">
-          <h3>Error parsing RDF data:</h3>
-          <pre>${error.message}</pre>
+          <h3>Couldn't parse the data as ${this.escapeHtml(formatLabel ?? "RDF")}</h3>
+          <p>Check the syntax, or set the format to match your data. The parser reported:</p>
+          <pre>${this.escapeHtml(error.message)}</pre>
         </div>
       </div>
     `;
@@ -858,6 +870,13 @@ export class RDFDetailsView extends HTMLElement {
         color: var(--rdf-text);
       }
 
+      /* Non-color type cue; inherits the value's color, shape carries signal. */
+      .literal-type-icon {
+        margin-right: 0.3rem;
+        font-size: 0.85em;
+        opacity: 0.85;
+      }
+
       .literal.numeric {
         color: var(--rdf-numeric);
         font-weight: 500;
@@ -906,6 +925,25 @@ export class RDFDetailsView extends HTMLElement {
       .resource-image:hover {
         transform: scale(1.05);
         cursor: pointer;
+      }
+
+      .resource-image-fallback {
+        display: none;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px dashed var(--rdf-border);
+        border-radius: 6px;
+        color: var(--rdf-text-muted);
+        font-size: 0.85em;
+      }
+
+      .resource-image-wrap.img-failed .resource-image {
+        display: none;
+      }
+
+      .resource-image-wrap.img-failed .resource-image-fallback {
+        display: inline-flex;
       }
 
       /* When images are disabled inline */
@@ -1236,11 +1274,17 @@ export class RDFDetailsView extends HTMLElement {
     return `<span class="term">${this.escapeHtml(value)}</span>`;
   }
 
+  // Leading glyph so a literal's type is conveyed by shape, not hue alone
+  // (WCAG 1.4.1). Mirrors the React component's Blueprint type icons.
+  private typeGlyph(glyph: string): string {
+    return `<span class="literal-type-icon" aria-hidden="true">${glyph}</span>`;
+  }
+
   private renderLiteralValue(value: string): string {
     // Check if it's a number
     const numericValue = parseFloat(value);
     if (!isNaN(numericValue) && isFinite(numericValue)) {
-      return `<span class="literal numeric" title="Numeric value">${this.escapeHtml(value)}</span>`;
+      return `<span class="literal numeric" title="Numeric value">${this.typeGlyph("#")}${this.escapeHtml(value)}</span>`;
     }
 
     // Check if it's a date
@@ -1248,19 +1292,20 @@ export class RDFDetailsView extends HTMLElement {
     if (dateRegex.test(value)) {
       const date = new Date(value);
       if (!isNaN(date.getTime())) {
-        return `<span class="literal date" title="Date: ${date.toLocaleString()}">${this.escapeHtml(value)}</span>`;
+        return `<span class="literal date" title="Date: ${date.toLocaleString()}">${this.typeGlyph("▤")}${this.escapeHtml(value)}</span>`;
       }
     }
 
     // Check if it's a boolean
     if (value === "true" || value === "false") {
-      return `<span class="literal boolean">${this.escapeHtml(value)}</span>`;
+      const glyph = value === "true" ? "✓" : "✗";
+      return `<span class="literal boolean">${this.typeGlyph(glyph)}${this.escapeHtml(value)}</span>`;
     }
 
     // Check if it's an email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (emailRegex.test(value)) {
-      return `<a href="mailto:${this.escapeHtml(value)}" class="literal email">${this.escapeHtml(value)}</a>`;
+      return `<a href="mailto:${this.escapeHtml(value)}" class="literal email">${this.typeGlyph("✉")}${this.escapeHtml(value)}</a>`;
     }
 
     // Default literal
@@ -1363,8 +1408,13 @@ export class RDFDetailsView extends HTMLElement {
     let imageHtml = "";
 
     if (this.config.showImagesInline) {
-      imageHtml = `<img src="${this.escapeHtml(uri)}" alt="Resource image" class="resource-image" 
-                   onerror="this.style.display='none';" loading="lazy">`;
+      // On load failure, swap to a labelled placeholder instead of the
+      // browser's broken-image glyph (mirrors the React ResourceImage).
+      imageHtml = `<span class="resource-image-wrap">
+                   <img src="${this.escapeHtml(uri)}" alt="Resource image" class="resource-image"
+                   onerror="this.closest('.resource-image-wrap').classList.add('img-failed')" loading="lazy">
+                   <span class="resource-image-fallback" aria-hidden="true">▦ Image unavailable</span>
+                 </span>`;
     }
 
     const linkHtml =

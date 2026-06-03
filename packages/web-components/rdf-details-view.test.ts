@@ -76,3 +76,17 @@ test("keeps a small graph expanded without a filter", () => {
   expect(root.querySelector(".subject-filter")).toBeNull();
   expect(root.querySelector(".properties-table")).not.toBeNull();
 });
+
+test("adds a non-color type glyph to typed literals", () => {
+  const viewer = new RDFDetailsView();
+  viewer.setData(
+    `@prefix ex: <http://example.org/> .
+ex:x ex:count 42 ;
+  ex:ok true .`,
+    "turtle",
+  );
+  const root = viewer.shadowRoot;
+  expect(root.querySelector(".literal-type-icon")).not.toBeNull();
+  // Boolean "true" carries a check glyph (unlikely to appear elsewhere).
+  expect(root.innerHTML).toContain("✓");
+});

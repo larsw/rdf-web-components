@@ -205,6 +205,15 @@ const DEFAULT_IMAGE_PREDICATES = [
   'http://xmlns.com/foaf/0.1/thumbnail',
 ]
 
+/** Human-readable names for the RDF formats, for error copy. */
+const FORMAT_LABELS: Record<string, string> = {
+  turtle: 'Turtle',
+  'n-triples': 'N-Triples',
+  'n-quads': 'N-Quads',
+  trig: 'TriG',
+  'json-ld': 'JSON-LD',
+}
+
 /**
  * Render RDF data in a structured details view.
  */
@@ -431,8 +440,20 @@ export const RdfDetailsView = ({
   if (error) {
     return (
       <div className={viewerClass} data-theme={theme}>
-        <Callout intent="danger" title="Failed to parse RDF data">
-          <p className={Classes.TEXT_SMALL}>{error.message}</p>
+        <Callout
+          intent="danger"
+          title={`Couldn't parse the data as ${FORMAT_LABELS[format] ?? format}`}
+        >
+          <p className={Classes.TEXT_SMALL}>
+            Check the syntax, or set the <code>format</code> to match your data.
+            The parser reported:
+          </p>
+          <pre
+            className={Classes.CODE_BLOCK}
+            style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}
+          >
+            {error.message}
+          </pre>
         </Callout>
       </div>
     )
@@ -1196,6 +1217,31 @@ const negotiateContentType = async (
   }
 }
 
+const isTruthyLiteral = (value: string) => {
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'true' || normalized === '1'
+}
+
+/**
+ * Leading icon that encodes a literal's type as a non-color cue, so date /
+ * number / boolean / email aren't distinguished by hue alone (WCAG 1.4.1).
+ * Inherits the value's color and is decorative (the value text carries the
+ * meaning for assistive tech).
+ */
+const LiteralTypeIcon = ({ kind, value }: { kind: string; value: string }) => {
+  const shared = {
+    size: 12,
+    className: 'literal-type-icon',
+    'aria-hidden': true,
+  } as const
+  if (kind === 'numeric') return <Icon icon="numerical" {...shared} />
+  if (kind === 'date') return <Icon icon="calendar" {...shared} />
+  if (kind === 'boolean')
+    return <Icon icon={isTruthyLiteral(value) ? 'tick' : 'cross'} {...shared} />
+  if (kind === 'email') return <Icon icon="envelope" {...shared} />
+  return null
+}
+
 const renderLiteralValue = (
   literal: Literal,
   namespaces: NamespaceMap,
@@ -1242,6 +1288,7 @@ const renderLiteralValue = (
   if (classification.kind === 'email') {
     return (
       <a href={`mailto:${value}`} className="literal email">
+        <LiteralTypeIcon kind="email" value={value} />
         {value}
       </a>
     )
@@ -1269,6 +1316,7 @@ const renderLiteralValue = (
     <span
       className={`literal ${classification.kind}${preferred ? ' preferred' : ''}`.trim()}
     >
+      <LiteralTypeIcon kind={classification.kind} value={value} />
       <span className="literal-value">{value}</span>
       {options.showLanguageTags && lang ? (
         <span className="lang-tag" aria-label={`Language ${lang}`}>
@@ -1381,6 +1429,41 @@ const renderUriLink = (
   return link
 }
 
+/**
+ * Image that swaps to a labelled placeholder when the source fails to load
+ * (dead URL, blocked host), instead of the browser's broken-image glyph.
+ */
+const ResourceImage = ({
+  uri,
+  alt,
+  className,
+  style,
+}: {
+  uri: string
+  alt: string
+  className?: string
+  style?: CSSProperties
+}) => {
+  const [errored, setErrored] = useState(false)
+  if (errored) {
+    return (
+      <span className="resource-image-fallback" style={style}>
+        <Icon icon="media" aria-hidden />
+        <span>Image unavailable</span>
+      </span>
+    )
+  }
+  return (
+    <img
+      src={uri}
+      alt={alt}
+      className={className}
+      style={style}
+      onError={() => setErrored(true)}
+    />
+  )
+}
+
 const renderUriValue = (
   uri: string,
   namespaces: NamespaceMap,
@@ -1406,8 +1489,8 @@ const renderUriValue = (
       {isImage ? (
         <>
           <a href={uri} target="_blank" rel="noreferrer">
-            <img
-              src={uri}
+            <ResourceImage
+              uri={uri}
               alt={displayValue}
               className="resource-image"
               style={{
@@ -1460,8 +1543,9 @@ const ImageCarousel = ({
   return (
     <div className="image-carousel">
       <a href={current} target="_blank" rel="noreferrer">
-        <img
-          src={current}
+        <ResourceImage
+          key={current}
+          uri={current}
           alt=""
           className="resource-image image-carousel-image"
         />
